@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RAR Logistik - Scanner & Gestione Pacchi</title>
-    <!-- Libreria di Scansione QR -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,19 +13,16 @@
         .split-scanner-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: #0f172a; }
         .workspace-area { padding: 1rem; overflow-y: auto; flex: 1; background: #1e293b; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
-        /* Scanner Viewport */
         .camera-card { background: #0f172a; border-radius: 16px; padding: 0.75rem; overflow: hidden; margin-bottom: 1rem; border: 1px solid #334155; }
         .camera-viewport { position: relative; width: 100%; height: 160px; background: #000; border-radius: 12px; overflow: hidden; }
         .laser-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 110px; height: 110px; border: 3px solid #f97316; border-radius: 12px; box-shadow: 0 0 0 999px rgba(0,0,0,0.6); pointer-events: none; z-index: 5; }
         .laser-line { position: absolute; width: 100%; height: 2px; background-color: #ef4444; box-shadow: 0 0 8px #ef4444; top: 0; animation: scanRadar 2s infinite ease-in-out; }
         @keyframes scanRadar { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
 
-        /* Form di inserimento manuale */
         .manual-entry-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1.5rem; }
         .manual-input { width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 0.6rem; border-radius: 8px; font-family: inherit; margin-bottom: 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
         .manual-input:focus { border-color: #f97316; outline: none; }
 
-        /* Schede dei pacchi aggiunti */
         .stop-item-card { background: #0f172a; border: 1px solid #334155; padding: 1rem; border-radius: 14px; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
         .stop-address-text { font-size: 0.9rem; font-weight: 700; color: #ffffff; }
         .stop-dest-name { font-size: 0.8rem; font-weight: 600; color: #f97316; text-transform: uppercase; }
@@ -38,31 +34,26 @@
         .photo-preview-slot { width: 45px; height: 45px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .photo-preview-slot img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Mappa posizionata in fondo */
         #google-map { width: 100%; height: 200px; border-top: 2px solid #334155; }
     </style>
 </head>
 <body>
 
     <div class="split-scanner-container">
-        
-        <header class="navbar" style="background:#1e293b; border-bottom: 1px solid #334155; padding: 0.75rem 1rem;">
-            <a href="spazio-lavoratore.html" class="logo">RAR <span>Logistik</span></a>
+        <header class="navbar" style="background:#1e293b; border-bottom: 1px solid #334155; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <a href="login.html" class="logo" style="text-decoration:none; font-weight:800; font-size:1.1rem; color:white;">RAR <span style="color:#f97316;">Logistik</span></a>
             <button onclick="fineScannerizzazione()" style="background:#22c55e; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.85rem; padding:0.5rem 1rem; cursor:pointer;">🏁 CREA GIRO</button>
         </header>
 
         <div class="workspace-area">
-            
-            <!-- CONTENITORE FOTOCAMERA QR -->
             <div class="camera-card">
                 <div class="camera-viewport">
                     <div id="qr-reader" style="width: 100%; height: 100%;"></div>
                     <div class="laser-box"><div class="laser-line"></div></div>
                 </div>
             </div>
-            <div id="status" style="text-align:center; font-size:0.8rem; font-weight:700; color:#94a3b8; margin-bottom:1rem; text-transform:uppercase;">Scanner Pronto / HTTPS Richiesto</div>
+            <div id="status" style="text-align:center; font-size:0.8rem; font-weight:700; color:#94a3b8; margin-bottom:1rem; text-transform:uppercase;">Scanner Pronto</div>
 
-            <!-- INSERIMENTO MANUALE (FUNZIONANTE ANCHE SE LA CAM È OFFLINE) -->
             <div class="manual-entry-card">
                 <div style="font-size:0.85rem; font-weight:800; color:#f97316; text-transform:uppercase; margin-bottom:0.75rem;">➕ Inserimento Manuale Vie</div>
                 <input type="text" id="manDestinatario" class="manual-input" placeholder="Nome Destinatario">
@@ -70,7 +61,6 @@
                 <button onclick="aggiungiViaAmano()" style="width:100%; padding:0.6rem; background:#f97316; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-family:inherit; font-size:0.85rem;">Aggiungi questo Stop</button>
             </div>
 
-            <!-- LISTA IN TEMPO REALE -->
             <div style="margin-bottom: 1rem;">
                 <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:700; margin-bottom:0.75rem;">
                     <span>📦 Pacchi in Carico</span>
@@ -78,19 +68,15 @@
                 </div>
                 <div id="stopList"></div>
             </div>
-
         </div>
 
-        <!-- ANTEPRIMA GEOGRAFICA -->
         <div id="google-map"></div>
-
     </div>
 
-    <!-- Collegamento Firebase Cloud -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-
+    <!-- Firebase SDK Compat e logica principale -->
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+    <script>
         const firebaseConfig = {  
             apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",  
             authDomain: "rar-logistik-7663d.firebaseapp.com",   
@@ -99,18 +85,15 @@
             messagingSenderId: "657384053565",  
             appId: "1:657384053565:web:fc1e812a80553f1eb08354"  
         };    
-        const app = initializeApp(firebaseConfig);
-        window.db = getFirestore(app);
-    </script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-    <script>
         let map;
         let geocoder;
         let stops = [];
         let html5QrCode;
         let isProcessing = false;
         let markers = [];
-        let currentUser = localStorage.getItem('rar_active_user') || "Driver";
         const DEPOSITO_START = { lat: 46.6249, lng: 14.3053 };
 
         function initGoogleScanner() {
@@ -139,69 +122,62 @@
                 { fps: 10, qrbox: { width: 120, height: 120 } }, 
                 onScanSuccess
             ).catch(err => {
-                document.getElementById('status').innerText = "Cam offline. Usa inserimento manuale.";
-                console.log("Fotocamera non disponibile senza HTTPS o permessi negati.");
+                document.getElementById('status').innerText = "Cam offline. Usa manuale.";
             });
         }
 
-        // AGGANCIO AL DATABASE PER I CODICI MATRICE QR Caricati dal portale clienti
         async function onScanSuccess(decodedText) {
             if (isProcessing) return; 
             isProcessing = true;
             
             document.getElementById('status').innerText = "Ricerca Spedizione... 🔄";
             try {
-                // Interroga la tabella Spedizioni di Firebase usando il testo del QR
-                const docRef = doc(window.db, "Spedizioni", decodedText.trim());
-                const docSnap = await getDoc(docRef);
+                const docSnap = await db.collection("Spedizioni").doc(decodedText.trim()).get();
 
-                if (docSnap.exists()) {
+                if (docSnap.exists) {
                     const data = docSnap.data();
                     if (stops.some(s => s.id === decodedText.trim())) {
-                        alert("Questo pacco è già stato scansionato e inserito!");
+                        alert("Pacco già scansionato!");
                         isProcessing = false;
                         return;
                     }
 
-                    // Prende l'indirizzo dal Cloud e chiede a Google Maps dove si trova nel mondo
                     geocoder.geocode({ address: data.indirizzo }, (results, geoStatus) => {
                         if (geoStatus === "OK" && results[0]) {
                             creaNuovaTappa(decodedText.trim(), data.destinatario, data.indirizzo, results[0].geometry.location, data.note || "");
                         } else {
-                            alert("Indirizzo del codice QR non riconosciuto dai server cartografici.");
+                            alert("Indirizzo non riconosciuto.");
                         }
                     });
                 } else {
-                    alert("Codice pacco non trovato nel database Cloud Spedizioni.");
+                    alert("Codice pacco non trovato nel Database.");
                 }
-            } catch (e) { console.error("Errore lettura Firebase: ", e); }
+            } catch (e) { console.error(e); }
             
             setTimeout(() => { isProcessing = false; document.getElementById('status').innerText = "Inquadra il QR Code"; }, 1500);
         }
 
-        // LOGICA DI INSERIMENTO MANUALE BLINDATA
         window.aggiungiViaAmano = function() {
             const dest = document.getElementById('manDestinatario').value.trim();
             const addr = document.getElementById('manIndirizzo').value.trim();
 
             if(!dest || !addr) {
-                alert("Devi compilare sia il Nome che l'Indirizzo completo!");
+                alert("Compila tutti i campi!");
                 return;
             }
 
-            document.getElementById('status').innerText = "Ricerca indirizzo Google... 🗺️";
+            document.getElementById('status').innerText = "Ricerca... 🗺️";
 
             geocoder.geocode({ address: addr }, (results, geoStatus) => {
                 if (geoStatus === "OK" && results[0]) {
                     const fakeId = "MAN_" + Date.now();
-                    // Passa la posizione geografica a creaNuovaTappa
                     creaNuovaTappa(fakeId, dest, addr, results[0].geometry.location, "Inserito a mano");
                     
                     document.getElementById('manDestinatario').value = "";
                     document.getElementById('manIndirizzo').value = "";
-                    document.getElementById('status').innerText = "Pacco Aggiunto Manualmente! ✅";
+                    document.getElementById('status').innerText = "Stop Aggiunto! ✅";
                 } else {
-                    alert("Google Maps non trova questa via. Verifica se scritta correttamente (Via, Numero, Città).");
+                    alert("Google Maps non trova questo indirizzo.");
                     document.getElementById('status').innerText = "Pronto";
                 }
             });
@@ -216,19 +192,14 @@
                 quantitaPacchi: 1, 
                 fotoRiconoscimento: "", 
                 lat: googleLocation.lat(),
-                lng: googleLocation.lng(), // Corretto uniformemente in lng come vuole Google Maps
+                lng: googleLocation.lng(),
                 consegnato: false
             };
 
             stops.push(t);
             document.getElementById('itemsCounter').innerText = `${stops.length} Tappe`;
 
-            // Aggiunge la puntina visiva sulla mappa in fondo alla pagina
-            const marker = new google.maps.Marker({
-                position: googleLocation,
-                map: map,
-                title: destinatario
-            });
+            const marker = new google.maps.Marker({ position: googleLocation, map: map, title: destinatario });
             markers.push(marker);
             map.setCenter(googleLocation);
 
@@ -249,30 +220,22 @@
                             </div>
                             <button onclick="rimuoviTappa(${index})" style="background:none; border:none; color:#f87171; font-weight:bold; font-size:1.1rem; cursor:pointer;">✕</button>
                         </div>
-
                         <div class="row-actions">
                             <div style="display:flex; align-items:center; gap:0.5rem;">
                                 <span style="font-size:0.75rem; font-weight:700; color:#94a3b8;">COLLI:</span>
                                 <button class="counter-btn" onclick="cambiaQuantita(${index}, -1)">-</button>
-                                <span style="font-size:0.9rem; font-weight:800; min-width:15px; text-align:center;">${s.quantitaPacchi}</span>
+                                <span style="font-size:0.9rem; font-weight:800;">${s.quantitaPacchi}</span>
                                 <button class="counter-btn" onclick="cambiaQuantita(${index}, 1)">+</button>
                             </div>
-
                             <div style="display:flex; align-items:center; gap:0.5rem;">
                                 <label style="background:#334155; padding:0.4rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer; color:#f1f5f9;">
-                                    📷 Foto Pacco
+                                    📷 Foto
                                     <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="scattaFotoPacco(${index}, this)">
                                 </label>
-                                <div class="photo-preview-slot" id="preview-${index}">
+                                <div class="photo-preview-slot">
                                     ${s.fotoRiconoscimento ? `<img src="${s.fotoRiconoscimento}">` : `<span style="font-size:0.6rem; color:#475569;">NO</span>`}
                                 </div>
                             </div>
-                        </div>
-
-                        <div>
-                            <input type="text" value="${s.notes}" placeholder="Note interne..." 
-                                style="width:100%; background:#1e293b; border:1px solid #334155; color:white; padding:0.4rem; border-radius:6px; font-size:0.8rem; font-family:inherit; box-sizing:border-box;"
-                                onchange="aggiornaNotaTappa(${index}, this.value)">
                         </div>
                     </div>
                 `;
@@ -282,10 +245,6 @@
         window.cambiaQuantita = function(index, variaz) {
             stops[index].quantitaPacchi = Math.max(1, stops[index].quantitaPacchi + variaz);
             renderStopsList();
-        };
-
-        window.aggiornaNotaTappa = function(index, testo) {
-            stops[index].notes = testo;
         };
 
         window.rimuoviTappa = function(index) {
@@ -307,23 +266,37 @@
             }
         };
 
-        window.fineScannerizzazione = function() {
+        window.fineScannerizzazione = async function() {
             if (stops.length === 0) {
-                alert("Nessun pacco in lista da ottimizzare!");
+                alert("Nessun pacco in lista!");
                 return;
             }
-            // Avvia l'algoritmo matematico e salva
+
+            let idRotta = prompt("Inserisci il numero di rotta da assegnare (es. 0101):");
+            if (!idRotta) return;
+            idRotta = idRotta.trim();
+
             let rottaOttimizzata = ottimizzaPercorsoLogistico(DEPOSITO_START, stops);
-            localStorage.setItem(`rar_rotta_ottimizzata_${currentUser}`, JSON.stringify(rottaOttimizzata));
-            
-            // Inizializza a zero i contatori del turno per la dashboard
-            localStorage.setItem("rar_daily_stops_" + currentUser, 0);
-            
-            alert(`Giro Ottimizzato! Generato itinerario di ${rottaOttimizzata.length} tappe. Ora puoi avviare il Navigatore.`);
-            window.location.href = "spazio-lavoratore.html";
+
+            document.getElementById('status').innerText = "Salvataggio Cloud... ☁️";
+
+            try {
+                await db.collection("Rotte").doc(idRotta).set({
+                    codiceRotta: idRotta,
+                    dataCreazione: new Date().toLocaleDateString('it-IT'),
+                    stato: "Pronta",
+                    tappe: rottaOttimizzata
+                });
+
+                alert(`Rotta ${idRotta} creata con successo!`);
+                localStorage.removeItem('rar_active_user');
+                window.location.href = "login.html";
+            } catch (error) {
+                console.error(error);
+                alert("Errore durante il salvataggio.");
+            }
         };
 
-        // Algoritmo di calcolo sequenziale (Prossimità chilometrica a catena)
         function ottimizzaPercorsoLogistico(puntoPartenza, listaStops) {
             let insoluti = [...listaStops];
             let percorsoRisolto = [];
@@ -333,7 +306,6 @@
                 let indicePiuVicino = 0;
                 let distanzaMinima = Infinity;
                 for (let i = 0; i < insoluti.length; i++) {
-                    // Allineato a .lng per interfacciarsi correttamente con le API di Google Maps Cloud
                     let d = Math.sqrt(Math.pow(posizioneAttuale.lat - insoluti[i].lat, 2) + Math.pow(posizioneAttuale.lng - insoluti[i].lng, 2));
                     if (d < distanzaMinima) { distanzaMinima = d; indicePiuVicino = i; }
                 }
@@ -344,8 +316,6 @@
             return percorsoRisolto;
         }
     </script>
-
-    <!-- Script di attivazione Google Maps partner -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&callback=initGoogleScanner"></script>
 </body>
 </html>
