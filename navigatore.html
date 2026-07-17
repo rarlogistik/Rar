@@ -43,50 +43,47 @@
 
         <div class="navigation-panel">
             <div class="address-box">
-                <span style="color: #f97316;">Direzione:</span>
+                <span style="color: #f97316;">Target:</span>
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
-            <!-- FASE A: GUIDA -->
             <div id="panelInGuida">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtETA">-- Min</div>
                     <div class="km-box" id="txtKmRimanenti">-- km</div>
                 </div>
                 
-                <!-- METRICHE RICHIESTE IN PICCOLO -->
                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase;">
-                    <span>🛑 Stop rimanenti: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
-                    <span>🕒 ETA End Tour: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
+                    <span>🛑 Tappe Rimanenti: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
+                    <span>🕒 Fine Stimata: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
                 </div>
 
-                <button onclick="attivazioneArrivoParcheggio()" class="btn-action btn-parked">🅿️ I've Parked</button>
+                <button onclick="attivazioneArrivoParcheggio()" class="btn-action btn-parked">🅿️ Sono Arrivato</button>
             </div>
 
-            <!-- FASE B: PARCHEGGIATO -->
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
                     <div class="pacco-value" id="txtNomeDestinatario">---</div>
                     
-                    <div class="pacco-label">📦 Numero Pacchi per questo stop</div>
+                    <div class="pacco-label">📦 Colli da Consegnare</div>
                     <div class="pacco-value" id="txtNumeroColli" style="color:#f97316; font-size:1.3rem;">1</div>
 
                     <div id="boxFotoMagazzino" class="hidden">
-                        <div class="pacco-label">📷 Foto del pacco (da magazzino)</div>
+                        <div class="pacco-label">📷 Foto del pacco caricato</div>
                         <img id="imgPaccoMagazzino" class="pacco-foto-preview" src="">
                     </div>
                 </div>
 
-                <button id="btnApriOpzioniConsegna" onclick="mostraOpzioniConsegna()" class="btn-action btn-consegna">✅ Consegna</button>
+                <button id="btnApriOpzioniConsegna" onclick="mostraOpzioniConsegna()" class="btn-action btn-consegna">✅ Chiudi Tappa</button>
                 
                 <div id="boxOpzioniChiusura" class="hidden">
-                    <div class="pacco-label" style="margin-bottom:0.5rem;">Seleziona modalità:</div>
+                    <div class="pacco-label" style="margin-bottom:0.5rem;">Esito Consegna:</div>
                     <div class="consegna-options-grid">
-                        <button onclick="finalizzaStatoConsegna('In mano al cliente')" class="option-btn">🤝 In mano al cliente</button>
-                        <button onclick="finalizzaStatoConsegna('Al vicino')" class="option-btn">🚪 Al vicino</button>
+                        <button onclick="finalizzaStatoConsegna('Consegnato nelle mani del cliente')" class="option-btn">🤝 Nelle mani del cliente</button>
+                        <button onclick="finalizzaStatoConsegna('Lasciato al vicino di casa')" class="option-btn">🚪 Al vicino</button>
                         <label class="option-btn" style="display:block; box-sizing:border-box;">
-                            🔒 Posto sicuro (Foto richiesta)
+                            🔒 Posto sicuro (Scatta Foto)
                             <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="scattaFotoPostoSicuro(this)">
                         </label>
                     </div>
@@ -133,7 +130,7 @@
         }
 
         async function scaricaRottaAssegnata() {
-            let codiceRichiesto = prompt("Inserisci il numero di rotta assegnato:");
+            let codiceRichiesto = prompt("Digita il codice rotta da caricare nel navigatore:");
             if (!codiceRichiesto) {
                 window.location.href = "spazio-lavoratore.html";
                 return;
@@ -148,13 +145,13 @@
                     indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
                     
                     if (indiceAttuale === -1) {
-                        alert("Rotta già completata!");
+                        alert("Ottimo lavoro! Questa rotta risulta già interamente completata.");
                         window.location.href = "spazio-lavoratore.html";
                         return;
                     }
                     aggiornaInterfacciaGuida();
                 } else {
-                    alert("Rotta non trovata.");
+                    alert("Codice errato o rotta non esistente nel Cloud.");
                     scaricaRottaAssegnata();
                 }
             } catch (e) { console.error(e); }
@@ -163,7 +160,7 @@
         function aggiornaInterfacciaGuida() {
             const stopCorrente = rotta[indiceAttuale];
             
-            document.getElementById('lblStopAttuale').innerText = `Stop ${indiceAttuale + 1} di ${rotta.length}`;
+            document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1} di ${rotta.length}`;
             document.getElementById('txtIndirizzoTarget').innerText = stopCorrente.address;
             
             document.getElementById('panelInGuida').classList.remove('hidden');
@@ -171,8 +168,8 @@
             document.getElementById('boxOpzioniChiusura').classList.add('hidden');
             document.getElementById('btnApriOpzioniConsegna').classList.remove('hidden');
 
-            const km = parseFloat((2.5 + Math.random() * 3).toFixed(1));
-            const min = Math.round(km * 2);
+            const km = parseFloat((1.8 + Math.random() * 2.5).toFixed(1));
+            const min = Math.round(km * 2.2);
             document.getElementById('txtKmRimanenti').innerText = km + " km";
             document.getElementById('txtETA').innerText = min + " Min";
 
@@ -180,7 +177,7 @@
             document.getElementById('lblStopRimanenti').innerText = rimanenti;
 
             const oraAttuale = new Date();
-            oraAttuale.setMinutes(oraAttuale.getMinutes() + (rimanenti * 12));
+            oraAttuale.setMinutes(oraAttuale.getMinutes() + (rimanenti * 10));
             document.getElementById('lblETAEndTour').innerText = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
             const origine = indiceAttuale === 0 ? DEPOSITO_START : { lat: rotta[indiceAttuale - 1].lat, lng: rotta[indiceAttuale - 1].lng };
@@ -237,12 +234,11 @@
             rotta[indiceAttuale].consegnato = true;
             
             try {
-                // Aggiorna lo stato della rotta sul Cloud
                 await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: rotta });
                 
                 indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
                 if (indiceAttuale === -1) {
-                    alert("Giro completato!");
+                    alert("Spettacolo! Hai completato tutte le consegne di oggi!");
                     window.location.href = "spazio-lavoratore.html";
                 } else {
                     aggiornaInterfacciaGuida();
