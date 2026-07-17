@@ -10,8 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-        .split-scanner-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: #0f172a; }
-        .workspace-area { padding: 1rem; overflow-y: auto; flex: 1; background: #1e293b; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .split-scanner-container { display: flex; flex-direction: column; min-height: 100vh; max-width: 500px; margin: 0 auto; background: #0f172a; }
+        
+        /* Area di lavoro centrale scrollabile */
+        .workspace-area { padding: 1rem; flex: 1; background: #1e293b; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
         .camera-card { background: #0f172a; border-radius: 16px; padding: 0.75rem; overflow: hidden; margin-bottom: 1rem; border: 1px solid #334155; }
         .camera-viewport { position: relative; width: 100%; height: 160px; background: #000; border-radius: 12px; overflow: hidden; }
@@ -34,7 +36,8 @@
         .photo-preview-slot { width: 45px; height: 45px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .photo-preview-slot img { width: 100%; height: 100%; object-fit: cover; }
 
-        #google-map { width: 100%; height: 200px; border-top: 2px solid #334155; }
+        /* FORZATURA ALTEZZA MAPPA: Importante per evitare il blocco grigio su smartphone */
+        #google-map { width: 100%; height: 250px !important; min-height: 250px !important; border-top: 2px solid #334155; position: relative; }
     </style>
 </head>
 <body>
@@ -70,10 +73,11 @@
             </div>
         </div>
 
+        <!-- La mappa riceve l'altezza fissa definita nel CSS -->
         <div id="google-map"></div>
     </div>
 
-    <!-- Firebase SDK Compat e logica principale -->
+    <!-- Firebase SDK Compat -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script>
@@ -96,13 +100,21 @@
         let markers = [];
         const DEPOSITO_START = { lat: 46.6249, lng: 14.3053 };
 
-        function initGoogleScanner() {
+        // Funzione globale lanciata al caricamento delle API di Google
+        window.initGoogleScanner = function() {
             geocoder = new google.maps.Geocoder();
+            
+            // Creazione forzata della mappa
             map = new google.maps.Map(document.getElementById("google-map"), {
-                zoom: 11,
+                zoom: 12,
                 center: DEPOSITO_START,
                 disableDefaultUI: true,
                 zoomControl: true
+            });
+
+            // Trigger grafico per forzare il ridisegno corretto su mobile ed evitare schermate grighe
+            google.maps.event.addListenerOnce(map, 'idle', function(){
+                google.maps.event.trigger(map, 'resize');
             });
 
             new google.maps.Marker({
@@ -113,7 +125,7 @@
             });
 
             avviaFotocameraQR();
-        }
+        };
 
         function avviaFotocameraQR() {
             html5QrCode = new Html5Qrcode("qr-reader");
