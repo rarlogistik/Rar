@@ -11,8 +11,6 @@
     <style>
         body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
         .split-scanner-container { display: flex; flex-direction: column; min-height: 100vh; max-width: 500px; margin: 0 auto; background: #0f172a; }
-        
-        /* Area di lavoro centrale scrollabile */
         .workspace-area { padding: 1rem; flex: 1; background: #1e293b; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
         .camera-card { background: #0f172a; border-radius: 16px; padding: 0.75rem; overflow: hidden; margin-bottom: 1rem; border: 1px solid #334155; }
@@ -36,7 +34,6 @@
         .photo-preview-slot { width: 45px; height: 45px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .photo-preview-slot img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* FORZATURA ALTEZZA MAPPA: Importante per evitare il blocco grigio su smartphone */
         #google-map { width: 100%; height: 250px !important; min-height: 250px !important; border-top: 2px solid #334155; position: relative; }
     </style>
 </head>
@@ -44,7 +41,7 @@
 
     <div class="split-scanner-container">
         <header class="navbar" style="background:#1e293b; border-bottom: 1px solid #334155; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <a href="login.html" class="logo" style="text-decoration:none; font-weight:800; font-size:1.1rem; color:white;">RAR <span style="color:#f97316;">Logistik</span></a>
+            <a href="spazio-lavoratore.html" class="logo" style="text-decoration:none; font-weight:800; font-size:1.1rem; color:white;">RAR <span style="color:#f97316;">Logistik</span></a>
             <button onclick="fineScannerizzazione()" style="background:#22c55e; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.85rem; padding:0.5rem 1rem; cursor:pointer;">🏁 CREA GIRO</button>
         </header>
 
@@ -73,11 +70,10 @@
             </div>
         </div>
 
-        <!-- La mappa riceve l'altezza fissa definita nel CSS -->
         <div id="google-map"></div>
     </div>
 
-    <!-- Firebase SDK Compat -->
+    <!-- SDK Sincronizzato con il navigatore -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script>
@@ -92,19 +88,14 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let map;
-        let geocoder;
+        let map, geocoder, html5QrCode;
         let stops = [];
-        let html5QrCode;
         let isProcessing = false;
         let markers = [];
         const DEPOSITO_START = { lat: 46.6249, lng: 14.3053 };
 
-        // Funzione globale lanciata al caricamento delle API di Google
         window.initGoogleScanner = function() {
             geocoder = new google.maps.Geocoder();
-            
-            // Creazione forzata della mappa
             map = new google.maps.Map(document.getElementById("google-map"), {
                 zoom: 12,
                 center: DEPOSITO_START,
@@ -112,7 +103,6 @@
                 zoomControl: true
             });
 
-            // Trigger grafico per forzare il ridisegno corretto su mobile ed evitare schermate grighe
             google.maps.event.addListenerOnce(map, 'idle', function(){
                 google.maps.event.trigger(map, 'resize');
             });
@@ -129,13 +119,8 @@
 
         function avviaFotocameraQR() {
             html5QrCode = new Html5Qrcode("qr-reader");
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                { fps: 10, qrbox: { width: 120, height: 120 } }, 
-                onScanSuccess
-            ).catch(err => {
-                document.getElementById('status').innerText = "Cam offline. Usa manuale.";
-            });
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 120, height: 120 } }, onScanSuccess)
+            .catch(err => document.getElementById('status').innerText = "Scanner Cam pronto o in modalità manuale.");
         }
 
         async function onScanSuccess(decodedText) {
@@ -158,11 +143,11 @@
                         if (geoStatus === "OK" && results[0]) {
                             creaNuovaTappa(decodedText.trim(), data.destinatario, data.indirizzo, results[0].geometry.location, data.note || "");
                         } else {
-                            alert("Indirizzo non riconosciuto.");
+                            alert("Indirizzo non riconosciuto da Google.");
                         }
                     });
                 } else {
-                    alert("Codice pacco non trovato nel Database.");
+                    alert("Codice pacco non trovato nel database Cloud.");
                 }
             } catch (e) { console.error(e); }
             
@@ -244,8 +229,8 @@
                                     📷 Foto
                                     <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="scattaFotoPacco(${index}, this)">
                                 </label>
-                                <div class="photo-preview-slot">
-                                    ${s.fotoRiconoscimento ? `<img src="${s.fotoRiconoscimento}">` : `<span style="font-size:0.6rem; color:#475569;">NO</span>`}
+                                <div class="photo-preview-slot" id="preview-box-${index}">
+                                    ${s.fotoRiconoscimento ? `<img src="${s.fotoRiconoscimento}" style="width:100%; height:100%; object-fit:cover;">` : `<span style="font-size:0.6rem; color:#475569;">NO</span>`}
                                 </div>
                             </div>
                         </div>
@@ -280,19 +265,19 @@
 
         window.fineScannerizzazione = async function() {
             if (stops.length === 0) {
-                alert("Nessun pacco in lista!");
+                alert("Aggiungi almeno un pacco alla lista prima di salvare!");
                 return;
             }
 
-            let idRotta = prompt("Inserisci il numero di rotta da assegnare (es. 0101):");
+            let idRotta = prompt("Inserisci il codice numerico da assegnare a questa rotta (es. 101):");
             if (!idRotta) return;
             idRotta = idRotta.trim();
 
             let rottaOttimizzata = ottimizzaPercorsoLogistico(DEPOSITO_START, stops);
-
             document.getElementById('status').innerText = "Salvataggio Cloud... ☁️";
 
             try {
+                // Scrittura diretta e forzata su Firestore
                 await db.collection("Rotte").doc(idRotta).set({
                     codiceRotta: idRotta,
                     dataCreazione: new Date().toLocaleDateString('it-IT'),
@@ -300,12 +285,11 @@
                     tappe: rottaOttimizzata
                 });
 
-                alert(`Rotta ${idRotta} creata con successo!`);
-                localStorage.removeItem('rar_active_user');
-                window.location.href = "login.html";
+                alert(`Perfetto! La Rotta ${idRotta} è stata salvata sul Cloud ed è pronta per il corriere.`);
+                window.location.href = "spazio-lavoratore.html";
             } catch (error) {
-                console.error(error);
-                alert("Errore durante il salvataggio.");
+                console.error("Errore salvataggio Firestore: ", error);
+                alert("Errore durante il salvataggio su Cloud. Controlla la connessione.");
             }
         };
 
@@ -319,7 +303,7 @@
                 let distanzaMinima = Infinity;
                 for (let i = 0; i < insoluti.length; i++) {
                     let d = Math.sqrt(Math.pow(posizioneAttuale.lat - insoluti[i].lat, 2) + Math.pow(posizioneAttuale.lng - insoluti[i].lng, 2));
-                    if (d < distanzaMinima) { distanzaMinima = d; indicePiuVicino = i; }
+                    if (d < distanceMinima) { distanzaMinima = d; indicePiuVicino = i; }
                 }
                 let stopScelto = insoluti.splice(indicePiuVicino, 1)[0];
                 percorsoRisolto.push(stopScelto);
@@ -328,6 +312,6 @@
             return percorsoRisolto;
         }
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGRpBjSWimGQ1GKNlO8ktMcg9CFYizIyo&callback=initGoogleScanner"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&callback=initGoogleScanner"></script>
 </body>
 </html>
