@@ -12,29 +12,24 @@
         .split-scanner-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: #0f172a; color: white; }
         .workspace-area { padding: 1rem; overflow-y: auto; max-height: 60vh; background: #1e293b; border-bottom: 2px solid #334155; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
-        /* Scanner Box */
         .camera-card { background: #0f172a; border-radius: 16px; padding: 0.75rem; overflow: hidden; margin-bottom: 1rem; border: 1px solid #334155; }
         .camera-viewport { position: relative; width: 100%; height: 160px; background: #000; border-radius: 12px; overflow: hidden; }
         .laser-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 110px; height: 110px; border: 3px solid #f97316; border-radius: 12px; box-shadow: 0 0 0 999px rgba(0,0,0,0.6); pointer-events: none; z-index: 5; }
         .laser-line { position: absolute; width: 100%; height: 2px; background-color: #ef4444; box-shadow: 0 0 8px #ef4444; top: 0; animation: scanRadar 2s infinite ease-in-out; }
         @keyframes scanRadar { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
 
-        /* Form Manuale */
         .manual-entry-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1.5rem; }
         .manual-input { width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 0.6rem; border-radius: 8px; font-family: inherit; margin-bottom: 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
         .manual-input:focus { border-color: #f97316; outline: none; }
 
-        /* Stop Card */
         .stop-item-card { background: #0f172a; border: 1px solid #334155; padding: 1rem; border-radius: 14px; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
         .stop-address-text { font-size: 0.9rem; font-weight: 700; color: #ffffff; }
         .stop-dest-name { font-size: 0.8rem; font-weight: 600; color: #f97316; text-transform: uppercase; }
         
-        /* Contatori e Gestione Pacchi */
         .row-actions { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; background: #1e293b; padding: 0.5rem; border-radius: 8px; border: 1px solid #334155; }
         .counter-btn { background: #334155; border: none; color: white; width: 28px; height: 28px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .counter-btn:hover { background: #f97316; }
         
-        /* Anteprima Foto */
         .photo-preview-slot { width: 45px; height: 45px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .photo-preview-slot img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -129,10 +124,9 @@
         function inizializzaLettoreQR() {
             html5QrCode = new Html5Qrcode("qr-reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: { width: 110, height: 110 } }, onScanSuccess)
-            .catch(err => console.log("Cam non avviata o attiva solo in HTTPS. Usa inserimento manuale."));
+            .catch(err => console.log("Usa inserimento manuale se la cam è bloccata."));
         }
 
-        // SCANSIONE QR REGOLARE
         async function onScanSuccess(decodedText) {
             if (isProcessing) return; 
             isProcessing = true;
@@ -165,7 +159,6 @@
             setTimeout(() => { isProcessing = false; document.getElementById('status').innerText = "Inquadra il QR Code"; }, 1500);
         }
 
-        // FUNZIONE AGGIUNTA A MANO
         window.aggiungiViaAmano = function() {
             const dest = document.getElementById('manDestinatario').value.trim();
             const addr = document.getElementById('manIndirizzo').value.trim();
@@ -182,7 +175,6 @@
                     const fakeId = "MANUAL_" + Date.now();
                     creaNuovaTappa(fakeId, dest, addr, results[0].geometry.location, "Inserito a mano");
                     
-                    // Svuota i campi del form
                     document.getElementById('manDestinatario').value = "";
                     document.getElementById('manIndirizzo').value = "";
                     document.getElementById('status').innerText = "✅ Tappa aggiunta a mano!";
@@ -199,10 +191,10 @@
                 destinatario: destinatario,
                 address: indirizzo,
                 notes: noteIniziali,
-                quantitaPacchi: 1, // Default 1 pacco
-                fotoRiconoscimento: "", // Opzionale, vuoto all'inizio
+                quantitaPacchi: 1, 
+                fotoRiconoscimento: "", 
                 lat: googleLocation.lat(),
-                lon: googleLocation.lng(),
+                lon: googleLocation.lng(), // Allineato a lng per consistenza logica Google Maps
                 consegnato: false,
                 time: "Nessuna"
             };
@@ -286,7 +278,7 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    stops[index].fotoRiconoscimento = e.target.result; // Stringa base64 dell'immagine
+                    stops[index].fotoRiconoscimento = e.target.result;
                     renderStopsList();
                 };
                 reader.readAsDataURL(input.files[0]);
