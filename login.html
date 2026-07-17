@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAR Logistik - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .login-container { max-width: 400px; margin: 4rem auto; padding: 2rem; background: var(--white); border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; }
+        .btn-login-submit { width: 100%; padding: 0.85rem; background-color: var(--primary); color: var(--white); border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; }
+        .btn-login-submit:hover { background-color: #1e293b; }
+        .error-message { color: #ef4444; font-size: 0.9rem; font-weight: 600; margin-top: 1rem; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo">RAR <span>Logistik</span></div>
+    </header>
+
+    <main class="login-container">
+        <h2 style="margin-bottom: 0.5rem;">Accesso Lavoratori</h2>
+        <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">Inserisci il tuo nome utente e password per accedere al tuo pannello.</p>
+        
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="username">Nome Utente</label>
+                <input type="text" id="username" placeholder="Es. Sorin Turcanu" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-login-submit">Accedi</button>
+            <div id="loginError" class="error-message hidden"></div>
+        </form>
+    </main>
+
+<script>
+    const usersDatabase = {
+        "Sorin Turcanu": "RAR",
+        "Octavio Turcanu": "RAR",
+        "Robert Dragu": "RAR",
+        // Credenziali Amministratore
+        "Rar Logistik": "RAR@2027"
+    };
+
+    function handleLogin(event) {
+        event.preventDefault();
+        const userIn = document.getElementById('username').value.trim();
+        const passIn = document.getElementById('password').value;
+        const errorDiv = document.getElementById('loginError');
+
+        if (usersDatabase[userIn] && usersDatabase[userIn] === passIn) {
+            localStorage.setItem('rar_active_user', userIn);
+            errorDiv.classList.add('hidden');
+            
+            // Se è l'amministratore, vai alla dashboard admin
+            if (userIn === "Rar Logistik") {
+                window.location.href = "dashboard-admin.html";
+            } else {
+                window.location.href = "spazio-lavoratore.html";
+            }
+        } else {
+            errorDiv.innerText = "Nome utente o password errati. Riprova.";
+            errorDiv.classList.remove('hidden');
+        }
+    }
+</script>
+
+    </body>
+</html>

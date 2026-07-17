@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAR Logistik - Spazio Lavoratore</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .driver-container { max-width: 500px; margin: 2rem auto; padding: 1rem; }
+        .welcome-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; border-radius: 16px; padding: 2rem 1.5rem; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); position: relative; }
+        .status-badge { position: absolute; top: 1.5rem; right: 1.5rem; background: #22c55e; color: white; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.6rem; border-radius: 30px; text-transform: uppercase; }
+        
+        .driver-card { background: var(--white); border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .card-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .counter-display { font-size: 2.2rem; font-weight: 800; color: var(--primary); text-align: center; margin: 1rem 0; }
+        
+        .btn-action-group { display: flex; gap: 0.75rem; margin-top: 1rem; }
+        .btn-driver { flex: 1; padding: 0.85rem; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.95rem; transition: transform 0.1s, opacity 0.2s; }
+        .btn-driver:active { transform: scale(0.98); }
+        .btn-add { background-color: var(--accent); color: white; }
+        .btn-sub { background-color: #f1f5f9; color: var(--primary); border: 1px solid #cbd5e1; }
+        
+        /* Bottoni Grandi Operativi */
+        .btn-operation-blue { display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1.1rem; background-color: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); transition: background-color 0.2s; margin-bottom: 1.25rem; }
+        .btn-operation-blue:hover { background-color: #2563eb; }
+        
+        .btn-navigation { display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1.1rem; background-color: #10b981; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); transition: background-color 0.2s; margin-bottom: 1.5rem; }
+        .btn-navigation:hover { background-color: #059669; }
+
+        .camera-btn-full { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; padding: 1rem; background-color: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; }
+        .camera-btn-full:hover { background-color: #1e293b; }
+
+        .retour-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+        .retour-item-input { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; }
+        .retour-select { width: 100%; padding: 0.6rem; mt: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 0.95rem; }
+        .btn-confirm-shift { width: 100%; padding: 1rem; background-color: var(--accent); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; margin-top: 1.25rem; }
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <a href="index.html" class="logo">RAR <span>Logistik</span></a>
+        <button onclick="toggleSidebar()" class="menu-toggle">☰</button>
+    </header>
+
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <nav id="sidebar" class="sidebar">
+        <button onclick="toggleSidebar()" class="sidebar-close">✕</button>
+        <div class="sidebar-menu-links">
+            <a href="spazio-lavoratore.html" class="sidebar-link active-highlight">🏠 Pannello Guida</a>
+            <a href="galleria.html" class="sidebar-link">📸 Resoconti</a>
+            <a href="simulazione-stipendio.html" class="sidebar-link">📊 Progresso Mensile</a>
+            <a href="performance.html" class="sidebar-link">⚡ Performance</a>
+            <hr style="border:0; height:1px; background:rgba(255,255,255,0.1); margin:1rem 0;">
+            <button onclick="logoutToLanding()" class="sidebar-link logout-btn" style="background:none; border: 1px solid #f87171; text-align:left; width:100%; cursor:pointer; font-family:inherit;">🚪 Esci</button>
+        </div>
+    </nav>
+
+    <main class="driver-container">
+
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+            <span class="status-badge">In Servizio</span>
+            <span style="color: var(--accent); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Driver Attivo</span>
+            <h1 id="driverWelcomeName" style="font-size: 1.8rem; margin-top: 0.25rem;">Benvenuto</h1>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.5rem;">Gestisci il tuo turno giornaliero e compila la rotta dei pacchi.</p>
+        </div>
+
+        <!-- SEZIONE DI SCANSIONE CARICAMENTO INIZIALE -->
+        <button class="btn-operation-blue" onclick="goToScanner()">
+            📦 Scannerizza Pacchi Mattina
+        </button>
+
+        <!-- Contatore Giornaliero -->
+        <div class="driver-card">
+            <div class="card-title">📦 Gestione Stop Odierni</div>
+            <p style="color: var(--text-light); font-size: 0.85rem;">Aggiorna il contatore ogni volta che completi uno stop manualmente o usa il Navigatore.</p>
+            
+            <div class="counter-display" id="dailyCounter">0</div>
+
+            <div class="btn-action-group">
+                <button class="btn-driver btn-sub" onclick="adjustStops(-1)">- 1 Stop</button>
+                <button class="btn-driver btn-add" onclick="adjustStops(1)">+ 1 Stop</button>
+            </div>
+        </div>
+
+        <!-- BOTTONE: Naviga -->
+        <button class="btn-navigation" onclick="startNavigation()">
+            🧭 Avvia Navigatore Rotte
+        </button>
+
+        <!-- Caricamento Foto / Fine Turno -->
+        <div class="driver-card">
+            <div class="card-title">📸 Fine Giornata e Resoconto</div>
+            <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 1.25rem;">Carica la foto dei tuoi dati di fine turno per confermare il progresso mensile.</p>
+            
+            <input type="file" id="cameraFileInput" class="hidden" accept="image/*" onchange="handlePhotoUpload(event)">
+            
+            <button class="camera-btn-full" id="btnMainCamera" onclick="triggerCamera()">
+                📷 Scatta o Carica Foto Fine Turno
+            </button>
+
+            <!-- Sezione Retour dinamica -->
+            <div id="retourFormSection" class="retour-box hidden">
+                <h4 style="color: var(--primary); margin-bottom: 0.5rem;">📦 Resoconto colli in Retour</h4>
+                <label style="font-size: 0.85rem; font-weight:600; display:block; margin-bottom:0.5rem;">Quanti colli stai riportando in deposito?</label>
+                <input type="number" id="retourCount" value="0" min="0" class="retour-select" style="margin-top:0; margin-bottom: 1rem;" oninput="generateRetourFields(this.value)">
+
+                <div id="retourItemsContainer"></div>
+
+                <button class="btn-confirm-shift" onclick="submitFinalShiftReport()">
+                    Salva e Chiudi Turno ✔️
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let currentUser = "";
+        let STOPS_KEY = "";
+        let DAILY_KEY = "";
+        let baseShiftImage = ""; 
+        let tempRetourPhotos = {}; 
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('show');
+        }
+
+        function logoutToLanding() {
+            localStorage.removeItem('rar_active_user');
+            window.location.href = "index.html";
+        }
+
+        function goToScanner() {
+            window.location.href = "scannerizza-pacchi.html";
+        }
+
+        function startNavigation() {
+            window.location.href = "navigatore.html";
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            currentUser = localStorage.getItem('rar_active_user');
+            if(!currentUser || currentUser === "Rar Logistik") {
+                window.location.href = "login.html";
+                return;
+            }
+
+            document.getElementById('driverWelcomeName').innerText = `Ciao, ${currentUser.split(' ')[0]}`;
+            
+            STOPS_KEY = "rar_total_stops_" + currentUser;
+            DAILY_KEY = "rar_daily_stops_" + currentUser;
+
+            const dailySaved = localStorage.getItem(DAILY_KEY) || "0";
+            document.getElementById('dailyCounter').innerText = dailySaved;
+        });
+
+        function adjustStops(amount) {
+            let daily = parseInt(localStorage.getItem(DAILY_KEY)) || 0;
+            daily = Math.max(0, daily + amount);
+            localStorage.setItem(DAILY_KEY, daily);
+            document.getElementById('dailyCounter').innerText = daily;
+        }
+
+        function triggerCamera() {
+            document.getElementById('cameraFileInput').click();
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function (e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function () {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 450;
+                        const scale = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scale;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        baseShiftImage = canvas.toDataURL('image/jpeg', 0.7);
+
+                        document.getElementById('btnMainCamera').classList.add('hidden');
+                        document.getElementById('retourFormSection').classList.remove('hidden');
+                    };
+                };
+            }
+        }
+
+        function generateRetourFields(count) {
+            const container = document.getElementById('retourItemsContainer');
+            container.innerHTML = "";
+            tempRetourPhotos = {}; 
+            
+            const num = parseInt(count) || 0;
+            for(let i = 1; i <= num; i++) {
+                const div = document.createElement('div');
+                div.className = "retour-item-input";
+                div.innerHTML = `
+                    <p style="font-weight:700; font-size:0.85rem; margin-bottom:0.5rem; color:var(--primary)">📦 Collo Retour #${i}</p>
+                    <label style="font-size:0.75rem; display:block; margin-bottom:0.25rem;">Foto del Pacco/Etichetta:</label>
+                    <input type="file" accept="image/*" onchange="handleRetourPhoto(event, ${i})" style="font-size:0.8rem; margin-bottom:0.5rem; width:100%;">
+                    
+                    <label style="font-size:0.75rem; display:block;">Motivazione:</label>
+                    <select id="retourReason-${i}" class="retour-select">
+                        <option value="Cliente Assente">Destinatario Assente / Chiuso</option>
+                        <option value="Rifiutato">Pacco Rifiutato dal cliente</option>
+                        <option value="Indirizzo Errato">Indirizzo Incompleto / Errato</option>
+                        <option value="Mancanza Tempo">Fine orario / Mancanza Tempo</option>
+                        <option value="Danneggiato">Merce Danneggiata</option>
+                    </select>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function handleRetourPhoto(event, index) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 350;
+                        const scale = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scale;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        tempRetourPhotos[index] = canvas.toDataURL('image/jpeg', 0.65);
+                    };
+                };
+            }
+        }
+
+        function submitFinalShiftReport() {
+            let totalStops = parseInt(localStorage.getItem(STOPS_KEY)) || 0;
+            let dailyStops = parseInt(localStorage.getItem(DAILY_KEY)) || 0;
+            const retourNum = parseInt(document.getElementById('retourCount').value) || 0;
+            const GALLERY_KEY = "rar_gallery_" + currentUser;
+            let galleria = JSON.parse(localStorage.getItem(GALLERY_KEY)) || [];
+
+            localStorage.setItem(STOPS_KEY, totalStops + dailyStops);
+
+            const todayStr = new Date().toLocaleDateString('it-IT');
+            galleria.push({
+                image: baseShiftImage,
+                date: todayStr,
+                stops: dailyStops,
+                type: `Consegnato (${dailyStops} Stop)`
+            });
+
+            for(let i = 1; i <= retourNum; i++) {
+                const photo = tempRetourPhotos[i] || baseShiftImage;
+                const reason = document.getElementById(`retourReason-${i}`).value;
+                
+                galleria.push({
+                    image: photo,
+                    date: todayStr,
+                    stops: 0,
+                    type: `⚠️ RETOUR #${i}: ${reason}`
+                });
+            }
+
+            localStorage.setItem(GALLERY_KEY, JSON.stringify(galleria));
+            localStorage.setItem(DAILY_KEY, 0);
+            document.getElementById('dailyCounter').innerText = "0";
+            
+            alert("Turno chiuso con successo! Resoconti salvati.");
+            window.location.href = "galleria.html";
+        }
+    </script>
+</body>
+</html>

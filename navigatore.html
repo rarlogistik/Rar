@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAR Logistik - Navigatore</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- CSS e JS di Leaflet per le mappe gratuite -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .nav-app-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: #f1f5f9; }
+        
+        /* Mappa fissa nella metà superiore */
+        #map { width: 100%; flex: 1; min-height: 350px; z-index: 1; }
+        
+        /* Pannello operativo nella metà inferiore */
+        .controls-panel { background: var(--white); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 1.5rem; box-shadow: 0 -10px 25px rgba(0,0,0,0.08); z-index: 10; position: relative; }
+        
+        .stop-badge { display: inline-block; background: var(--primary); color: white; font-size: 0.8rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 6px; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .stop-address { font-size: 1.2rem; font-weight: 800; color: var(--primary); line-height: 1.3; margin-bottom: 0.5rem; }
+        .stop-time { font-size: 0.9rem; color: var(--accent); font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.25rem; }
+        
+        .btn-delivery-success { width: 100%; padding: 1.1rem; background-color: #10b981; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3); transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-delivery-success:hover { background-color: #059669; }
+        
+        .route-summary { display: flex; justify-content: space-between; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.85rem; font-weight: 600; color: var(--text-light); }
+        
+        .no-route-card { padding: 3rem 1.5rem; text-align: center; background: white; border-radius: 16px; margin: 2rem 1rem; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-app-container">
+        
+        <!-- Navbar Minimal -->
+        <header class="navbar" style="position: relative;">
+            <a href="spazio-lavoratore.html" class="logo">RAR <span>Logistik</span></a>
+            <a href="spazio-lavoratore.html" class="btn-nav" style="border-color: rgba(255,255,255,0.3);">Pannello ←</a>
+        </header>
+
+        <!-- Area Mappa Stradale -->
+        <div id="map"></div>
+
+        <!-- Pannello Controllo Consegna Corrente -->
+        <div id="controlsPanel" class="controls-panel hidden">
+            <div class="stop-badge" id="stopIndexBadge">Stop 1</div>
+            <div class="stop-address" id="currentAddress">Caricamento indirizzo...</div>
+            <div class="stop-time" id="currentTimeWindow">⏱ Fascia Oraria: Nessuna</div>
+            
+            <button class="btn-delivery-success" onclick="confirmCurrentDelivery()">
+                ✓ Segna come Consegnato
+            </button>
+            
+            <div class="route-summary">
+                <span id="remainingStopsText">Mancano 0 stop</span>
+                <span style="color: var(--primary);" id="completedStopsText">Completati: 0</span>
+            </div>
+        </div>
+
+        <!-- Schermata di errore se non ci sono pacchi scannerizzati -->
+        <div id="noRouteCard" class="no-route-card hidden">
+            <h3 style="color: var(--primary); margin-bottom: 0.5rem;">Nessuna rotta attiva</h3>
+            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">Il magazziniere non ha ancora inserito o ottimizzato i pacchi per il tuo turno di oggi.</p>
+            <a href="spazio-lavoratore.html" class="btn-primary-app">Torna indietro</a>
+        </div>
+
+    </div>
+
+    <script>
+        let map;
+        let markersGroup;
+        let polylineRoute;
+        let rottaOttimizzata = [];
+        let currentIndex = 0;
+        
+        let currentUser = localStorage.getItem('rar_active_user') || "Ospite";
+        const ROTTA_KEY = `rar_rotta_ottimizzata_${currentUser}`;
+        const STOPS_KEY = "rar_total_stops_" + currentUser;
+        const DAILY_KEY = "rar_daily_stops_" + currentUser;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Carica la rotta specifica per il driver connesso
+            rottaOttimizzata = JSON.parse(localStorage.getItem(ROTTA_KEY)) || [];
+            
+            if (rottaOttimizzata.length === 0) {
+                document.getElementById('noRouteCard').classList.remove('hidden');
+                document.getElementById('map').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('controlsPanel').classList.remove('hidden');
+
+            // Trova il primo stop non ancora consegnato
+            currentIndex = rottaOttimizzata.findIndex(s => s.consegnato === false);
+            if (currentIndex === -1) {
+                // Se sono tutti consegnati, mostra l'ultimo per sicurezza o resetta
+                currentIndex = rottaOttimizzata.length - 1;
+            }
+
+            // Inizializza la mappa centrata sul primo punto utile della rotta
+            const startPoint = rottaOttimizzata[currentIndex];
+            map = L.map('map', { zoomControl: false }).setView([startPoint.lat, startPoint.lon], 14);
+            
+            // Carica le grafiche stradali gratuite da OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            markersGroup = L.layerGroup().addTo(map);
+            
+            // Disegna e renderizza la mappa stradale
+            renderMapAndLabels();
+        });
+
+        function renderMapAndLabels() {
+            // Svuota i vecchi marker
+            markersGroup.clearLayers();
+            if (polylineRoute) map.removeLayer(polylineRoute);
+
+            let coordinateLinee = [];
+            const attivo = rottaOttimizzata[currentIndex];
+
+            // Aggiorna i testi del pannello operativo
+            document.getElementById('stopIndexBadge').innerText = `Stop ${currentIndex + 1} di ${rottaOttimizzata.length}`;
+            document.getElementById('currentAddress').innerText = attivo.address;
+            document.getElementById('currentTimeWindow').innerText = `⏱ Fascia Oraria: ${attivo.time || 'Nessuna'}`;
+            
+            const mancanti = rottaOttimizzata.filter(s => !s.consegnato).length;
+            const completati = rottaOttimizzata.filter(s => s.consegnato).length;
+            document.getElementById('remainingStopsText').innerText = `Rimangono ${mancanti} consegne`;
+            document.getElementById('completedStopsText').innerText = `Completati: ${completati}`;
+
+            // Disegna i punti sulla mappa
+            rottaOttimizzata.forEach((stop, idx) => {
+                // Colore diverso se lo stop è già stato consegnato, è quello attivo o è successivo
+                let markerColor = "blue";
+                if (stop.consegnato) markerColor = "gray";
+                else if (idx === currentIndex) markerColor = "red";
+
+                // Icona personalizzata semplice tramite cerchio vettoriale Leaflet
+                const circleMarker = L.circleMarker([stop.lat, stop.lon], {
+                    radius: idx === currentIndex ? 10 : 7,
+                    fillColor: markerColor,
+                    color: "#ffffff",
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(markersGroup);
+
+                circleMarker.bindPopup(`<b>Stop ${idx + 1}</b><br>${stop.address}`);
+
+                if (!stop.consegnato) {
+                    coordinateLinee.push([stop.lat, stop.lon]);
+                }
+            });
+
+            // Disegna la linea del percorso stradale ottimizzato rimasto
+            if (coordinateLinee.length > 0) {
+                polylineRoute = L.polyline(coordinateLinee, { color: '#f97316', weight: 4, opacity: 0.7 }).addTo(map);
+                // Centra la visuale includendo i punti rimanenti
+                map.panTo([attivo.lat, attivo.lon]);
+            }
+        }
+
+        // Funzione scatenata dal tasto "Segna come Consegnato"
+        function confirmCurrentDelivery() {
+            // 1. Aggiorna lo stato nel vettore locale
+            rottaOttimizzata[currentIndex].consegnato = true;
+            localStorage.setItem(ROTTA_KEY, JSON.stringify(rottaOttimizzata));
+
+            // 2. Incrementa i contatori generali dell'applicazione
+            let daily = parseInt(localStorage.getItem(DAILY_KEY)) || 0;
+            let total = parseInt(localStorage.getItem(STOPS_KEY)) || 0;
+            
+            localStorage.setItem(DAILY_KEY, daily + 1);
+            localStorage.setItem(STOPS_KEY, total + 1);
+
+            // 3. Cerca la prossima tappa
+            const prossimoIndex = rottaOttimizzata.findIndex((s, idx) => idx > currentIndex && !s.consegnato);
+            
+            if (prossimoIndex !== -1) {
+                currentIndex = prossimoIndex;
+                alert("Ottimo! Stop registrato. Caricamento della rotta per la tappa successiva.");
+                renderMapAndLabels();
+            } else {
+                alert("🎉 Fantastico! Hai completato tutti gli stop della rotta ottimizzata di oggi!");
+                window.location.href = "spazio-lavoratore.html";
+            }
+        }
+    </script>
+</body>
+</html>

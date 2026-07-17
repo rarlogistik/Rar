@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAR Logistik - Resoconti</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .gallery-container { max-width: 500px; margin: 2rem auto; padding: 1rem; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+        @media (max-width: 380px) { .gallery-grid { grid-template-columns: 1fr; } }
+        
+        .gallery-card { background: var(--white); border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .gallery-card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+        .card-details { padding: 0.75rem; font-size: 0.8rem; }
+        .badge { display: inline-block; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; color: white; font-size: 0.7rem; margin-top: 0.25rem; }
+        
+        .no-photos { text-align: center; color: var(--text-light); padding: 3rem 0; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <a href="index.html" class="logo">RAR <span>Logistik</span></a>
+        <button onclick="toggleSidebar()" class="menu-toggle">☰</button>
+    </header>
+
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <nav id="sidebar" class="sidebar">
+        <button onclick="toggleSidebar()" class="sidebar-close">✕</button>
+        <div class="sidebar-menu-links">
+            <a href="spazio-lavoratore.html" class="sidebar-link">🏠 Pannello Guida</a>
+            <a href="galleria.html" class="sidebar-link active-highlight">📸 Resoconti</a>
+            <a href="simulazione-stipendio.html" class="sidebar-link">📊 Progresso Mensile</a>
+            <a href="performance.html" class="sidebar-link">⚡ Performance</a>
+            <hr style="border:0; height:1px; background:rgba(255,255,255,0.1); margin:1rem 0;">
+            <button onclick="logoutToLanding()" class="sidebar-link logout-btn" style="background:none; border: 1px solid #f87171; text-align:left; width:100%; cursor:pointer; font-family:inherit;">🚪 Esci</button>
+        </div>
+    </nav>
+
+    <main class="gallery-container">
+        
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">I tuoi Resoconti Mensili</h1>
+        <p style="color: var(--text-light); font-size: 0.9rem; margin-top: 0.25rem; margin-bottom: 1.5rem;">Qui puoi consultare l'archivio di tutte le foto e stop inviati.</p>
+
+        <div id="galleryGrid" class="gallery-grid"></div>
+
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('show');
+        }
+
+        function logoutToLanding() {
+            localStorage.removeItem('rar_active_user');
+            window.location.href = "index.html";
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentUser = localStorage.getItem('rar_active_user');
+            if(!currentUser) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            const GALLERY_KEY = "rar_gallery_" + currentUser;
+            const database = JSON.parse(localStorage.getItem(GALLERY_KEY)) || [];
+            const grid = document.getElementById('galleryGrid');
+
+            if (database.length === 0) {
+                grid.innerHTML = `<div class="no-photos" style="grid-column: span 2;">Nessuna foto caricata in questo mese.</div>`;
+                return;
+            }
+
+            // Mostriamo le foto partendo dall'ultima scattata
+            database.slice().reverse().forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'gallery-card';
+
+                let badgeColor = "#22c55e"; // Colore standard per consegne completate
+                if (item.type && item.type.includes("RETOUR")) badgeColor = "#ef4444";
+                if (item.type && item.type.includes("RECLAMO")) badgeColor = "#b91c1c";
+
+                card.innerHTML = `
+                    <img src="${item.image}" alt="Resoconto">
+                    <div class="card-details">
+                        <div style="font-weight: 700; color: var(--primary);">📅 ${item.date}</div>
+                        <div class="badge" style="background: ${badgeColor};">${item.type || 'Consegnato'}</div>
+                        <div style="color: var(--accent); font-weight: 600; margin-top: 0.25rem;">📦 Stop: ${item.stops}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        });
+    </script>
+</body>
+</html>
+>
