@@ -78,7 +78,7 @@
                 <button onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked">🅿️ SONO ARRIVATO SUL POSTO</button>
             </div>
 
-            <!-- FASE 3: CHIUSURA CONSEGNA -->
+            <!-- FASE 3: GESTIONE CHIUSURA CONSEGNA -->
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
@@ -99,7 +99,7 @@
                         <input type="text" id="txtNomeRicevente" class="input-text-premium" placeholder="Es. Mario Rossi">
                         <div class="pacco-label">Firma sullo schermo:</div>
                         <canvas id="signature-canvas"></canvas>
-                        <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; font-size:0.75rem; font-weight:700; margin-top:0.25rem; cursor:pointer;">🧹 Cancella Firma</button>
+                        <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; font-size:0.75rem; font-weight:700; margin-top:0.25rem; cursor:pointer;">🧹 CVancella Firma</button>
                     </div>
 
                     <div id="boxEsitoSicuro" class="hidden">
@@ -147,20 +147,23 @@
         let canvas, ctx, drawing = false;
         let ultimoHeadingValido = 0;
         let modalitaGuidaAttiva = false;
+        let toccoUtenteAttivo = false;
+        let timerSbloccoTocco = null;
 
         function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
 
-            // FORZATURA RENDERING VETTORIALE ATTRAVERSO LE LIBRERIE INTERNE WEBGL
             map = new google.maps.Map(document.getElementById("google-map"), {
                 zoom: 15, 
                 center: posizioneFurgoneGPS, 
                 disableDefaultUI: true,
                 mapId: "DEMO_MAP_ID",
-                renderingType: google.maps.RenderingType.VECTOR, // Specifica l'uso del layer vettoriale 3D
-                useStaticMap: false,
+                renderingType: google.maps.RenderingType.VECTOR,
                 gestureHandling: "greedy"
             });
+
+            map.addListener('dragstart', attivazioneBloccoManualeUtente);
+            map.addListener('zoom_changed', attivazioneBloccoManualeUtente);
 
             rigaTracciatoArancione = new google.maps.Polyline({
                 strokeColor: "#f97316",
@@ -181,6 +184,20 @@
 
             inizializzaDisegnoFirma();
             scaricaRottaAssegnata();
+        }
+
+        function attivazioneBloccoManualeUtente() {
+            if (!modalitaGuidaAttiva) return;
+            toccoUtenteAttivo = true;
+            clearTimeout(timerSbloccoTocco);
+            timerSbloccoTocco = setTimeout(() => { toccoUtenteAttivo = false; }, 6000);
+        }
+
+        function calcolaAngoloDirezione(daPunto, aPunto) {
+            let dLng = (aPunto.lng() - daPunto.lng);
+            let dLat = (aPunto.lat() - daPunto.lat);
+            let gradi = Math.atan2(dLng, dLat) * 180 / Math.PI;
+            return (gradi + 360) % 360;
         }
 
         async function scaricaRottaAssegnata() {
@@ -250,17 +267,17 @@
             document.getElementById('panelInViaggio').classList.remove('hidden');
             
             modalitaGuidaAttiva = true;
+            toccoUtenteAttivo = false;
 
-            // FORZATURA ASINCRONA DELLE OPZIONI DI INCLINAZIONE PROSPETTICA
             setTimeout(() => {
                 if (!modalitaGuidaAttiva) return;
-                map.setOptions({
+                map.moveCamera({
                     center: posizioneFurgoneGPS,
                     zoom: 19,
-                    tilt: 65, // Angolazione prospettica 3D sbloccata via hardware
+                    tilt: 65,
                     heading: ultimoHeadingValido
                 });
-            }, 250);
+            }, 200);
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
@@ -274,12 +291,13 @@
                         ultimoHeadingValido = position.coords.heading;
                     }
 
-                    // Forza costantemente il mantenimento del tilt a 65 gradi ad ogni spostamento stradale
-                    map.setOptions({
-                        center: posizioneFurgoneGPS,
-                        tilt: 65,
-                        heading: ultimoHeadingValido
-                    });
+                    if (!toccoUtenteAttivo) {
+                        map.moveCamera({
+                            center: posizioneFurgoneGPS,
+                            tilt: 65,
+                            heading: ultimoHeadingValido
+                        });
+                    }
 
                     const stopCorrente = rotta[indiceAttuale];
                     const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
@@ -298,6 +316,13 @@
                         if (status === "OK") {
                             const points = res.routes[0].overview_path;
                             rigaTracciatoArancione.setPath(points);
+
+                            if ((!velocita || velocita <= 0.8) && points.length > 1) {
+                                ultimoHeadingValido = calcolaAngoloDirezione(posizioneFurgoneGPS, points[1]);
+                                if (!toccoUtenteAttivo) {
+                                    map.moveCamera({ heading: ultimoHeadingValido });
+                                }
+                            }
 
                             const leg = res.routes[0].legs[0];
                             document.getElementById('txtKmRimanenti').innerText = leg.distance.text;
