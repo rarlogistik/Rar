@@ -54,6 +54,7 @@
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
+            <!-- FASE 1: PANORAMICA (PRIMA DI PARTIRE) -->
             <div id="panelPanoramica">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtPanETA">-- Min</div>
@@ -62,14 +63,22 @@
                 <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione</button>
             </div>
 
+            <!-- FASE 2: IN VIAGGIO (NAVIGAZIONE ATTIVA 3D) -->
             <div id="panelInViaggio" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtETA">-- Min</div>
                     <div class="km-box" id="txtKmRimanenti">-- km</div>
                 </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase;">
+                    <span>🛑 Stop rimanenti: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
+                    <span>🕒 ETA End Tour: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
+                </div>
+                
                 <button onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked">🅿️ Sono Arrivato sul Posto</button>
             </div>
 
+            <!-- FASE 3: GESTIONE CONSEGNA -->
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
@@ -128,6 +137,7 @@
         let indiceAttuale = 0;
         let idRottaGlobale = "";
         let markerFurgone = null;
+        let markerDestinazioneVerde = null;
         let watchId = null;
         let posizioneFurgoneGPS = { lat: 46.6249, lng: 14.3053 };
         
@@ -138,9 +148,11 @@
 
         function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
+            
+            // FIX: suppressMarkers: true elimina per sempre le lettere rosse A e B automatiche!
             directionsRenderer = new google.maps.DirectionsRenderer({
                 polylineOptions: { strokeColor: "#f97316", strokeWeight: 6 },
-                suppressMarkers: false
+                suppressMarkers: true 
             });
 
             map = new google.maps.Map(document.getElementById("google-map"), {
@@ -149,9 +161,16 @@
             });
             directionsRenderer.setMap(map);
 
+            // Cursore Blu della RAR Logistik (Sei tu, il punto A non serve!)
             markerFurgone = new google.maps.Marker({
-                position: posizioneFurgoneGPS, map: map, title: "Il tuo mezzo",
+                position: posizioneFurgoneGPS, map: map, title: "La tua posizione", zIndex: 10,
                 icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 6, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
+            });
+
+            // Pallino Verde Personalizzato per il punto B (La Tappa)
+            markerDestinazioneVerde = new google.maps.Marker({
+                position: posizioneFurgoneGPS, map: map, title: "Destinazione", zIndex: 5,
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
             });
 
             inizializzaDisegnoFirma();
@@ -193,10 +212,14 @@
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.add('hidden');
 
+            // Visuale dall'alto per decidere la partenza
             map.setTilt(0); map.setHeading(0);
 
+            const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
+            markerDestinazioneVerde.setPosition(destinazioneTappa);
+
             directionsService.route({
-                origin: posizioneFurgoneGPS, destination: { lat: stopCorrente.lat, lng: stopCorrente.lng }, travelMode: google.maps.TravelMode.DRIVING
+                origin: posizioneFurgoneGPS, destination: destinazioneTappa, travelMode: google.maps.TravelMode.DRIVING
             }, (res, status) => {
                 if (status === "OK") {
                     directionsRenderer.setDirections(res);
@@ -207,26 +230,46 @@
             });
         }
 
+        // AGGIORNAMENTO GPS REAL-TIME COMPATIBILE CON MAPS 3D
         window.avviaNavigazioneLive = function() {
             document.getElementById('panelPanoramica').classList.add('hidden');
             document.getElementById('panelInViaggio').classList.remove('hidden');
-            map.setZoom(19); map.setTilt(55);
+            
+            // Forza lo zoom ravvicinato e l'inclinazione prospettica da navigatore di auto (60 gradi)
+            map.setZoom(19); 
+            map.setTilt(60); 
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
                     posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    
+                    // Sposta il cursore blu e centra l'inquadratura dello smartphone sul mezzo
                     markerFurgone.setPosition(posizioneFurgoneGPS);
                     map.setCenter(posizioneFurgoneGPS);
 
+                    // ROTAZIONE MAPPA MAPS: Ruota lo schermo solo se ci stiamo muovendo davvero (sopra i 3 km/h)
                     let velocita = position.coords.speed; 
-                    if (velocita && velocita > 1.1 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
+                    if (velocita && velocita > 0.8 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
                         ultimoHeadingValido = position.coords.heading;
                         map.setHeading(ultimoHeadingValido);
-                    } else if (ultimoHeadingValido !== 0) { map.setHeading(ultimoHeadingValido); }
+                    } else if (ultimoHeadingValido !== 0) { 
+                        map.setHeading(ultimoHeadingValido); 
+                    }
 
                     const stopCorrente = rotta[indiceAttuale];
+                    const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
+                    markerDestinazioneVerde.setPosition(destinazioneTappa);
+
+                    // Aggiornamento metriche inferiori richieste
+                    const rimanenti = rotta.filter(s => !s.consegnato).length;
+                    document.getElementById('lblStopRimanenti').innerText = rimanenti;
+
+                    const oraAttuale = new Date();
+                    oraAttuale.setMinutes(oraAttuale.getMinutes() + (rimanenti * 12));
+                    document.getElementById('lblETAEndTour').innerText = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
                     directionsService.route({
-                        origin: posizioneFurgoneGPS, destination: { lat: stopCorrente.lat, lng: stopCorrente.lng }, travelMode: google.maps.TravelMode.DRIVING
+                        origin: posizioneFurgoneGPS, destination: destinazioneTappa, travelMode: google.maps.TravelMode.DRIVING
                     }, (res, status) => {
                         if (status === "OK") {
                             directionsRenderer.setDirections(res);
@@ -235,7 +278,7 @@
                             document.getElementById('txtETA').innerText = leg.duration.text;
                         }
                     });
-                }, () => console.log("Errore GPS"), { enableHighAccuracy: true, maximumAge: 0, timeout: 4000 });
+                }, () => console.log("Errore GPS"), { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
             }
         };
 
@@ -274,11 +317,10 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    // BLOCCO COMPRESSIONE DI SICUREZZA: riduce il peso della foto del 90% per evitare errori di timeout cloud
                     const img = new Image();
                     img.src = e.target.result;
                     img.onload = function() {
-                        const maxW = 500; // Larghezza massima ottimizzata
+                        const maxW = 500;
                         const scale = maxW / img.width;
                         const canvasCompresso = document.createElement('canvas');
                         canvasCompresso.width = maxW;
@@ -287,7 +329,6 @@
                         const ctxCompresso = canvasCompresso.getContext('2d');
                         ctxCompresso.drawImage(img, 0, 0, canvasCompresso.width, canvasCompresso.height);
                         
-                        // Salvataggio in JPEG leggero
                         fotoPostoSicuroBase64 = canvasCompresso.toDataURL('image/jpeg', 0.65);
                         document.getElementById('txtStatoFoto').innerText = "📸 Foto ottimizzata e pronta!";
                         document.getElementById('btnSalvaChiusura').classList.remove('hidden'); 
@@ -315,7 +356,6 @@
             copieTappeAggiornate[indiceAttuale].reportConsegna = dettagliEsito;
 
             try {
-                // Il database ora accetta il pacchetto leggero istantaneamente
                 await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: copieTappeAggiornate });
                 
                 rotta = copieTappeAggiornate;
