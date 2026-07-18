@@ -23,6 +23,13 @@
         .manual-input { width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 0.6rem; border-radius: 8px; font-family: inherit; margin-bottom: 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
         .manual-input:focus { border-color: #f97316; outline: none; }
 
+        /* Fix grafico suggerimenti Google */
+        .pac-container { background-color: #1e293b !important; border: 1px solid #334155 !important; border-radius: 8px; font-family: 'Inter', sans-serif !important; z-index: 9999 !important; }
+        .pac-item { color: #cbd5e1 !important; border-top: 1px solid #334155 !important; padding: 0.5rem !important; cursor: pointer; }
+        .pac-item:hover { background-color: #293548 !important; }
+        .pac-item-query { color: #ffffff !important; }
+        .pac-matched { color: #f97316 !important; }
+
         .stop-item-card { background: #0f172a; border: 1px solid #334155; padding: 1rem; border-radius: 14px; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; }
         .stop-address-text { font-size: 0.9rem; font-weight: 700; color: #ffffff; }
         .stop-dest-name { font-size: 0.8rem; font-weight: 600; color: #f97316; text-transform: uppercase; }
@@ -32,7 +39,6 @@
         .counter-btn:hover { background: #f97316; }
         
         .photo-preview-slot { width: 45px; height: 45px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .photo-preview-slot img { width: 100%; height: 100%; object-fit: cover; }
 
         #google-map { width: 100%; height: 250px !important; min-height: 250px !important; border-top: 2px solid #334155; position: relative; }
     </style>
@@ -57,7 +63,8 @@
             <div class="manual-entry-card">
                 <div style="font-size:0.85rem; font-weight:800; color:#f97316; text-transform:uppercase; margin-bottom:0.75rem;">➕ Inserimento Manuale Vie</div>
                 <input type="text" id="manDestinatario" class="manual-input" placeholder="Nome Destinatario">
-                <input type="text" id="manIndirizzo" class="manual-input" placeholder="Indirizzo Completo (Via, Civico, Città)">
+                <!-- Input con Autocompletamento -->
+                <input type="text" id="manIndirizzo" class="manual-input" placeholder="Inizia a digitare l'indirizzo...">
                 <button onclick="aggiungiViaAmano()" style="width:100%; padding:0.6rem; background:#f97316; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-family:inherit; font-size:0.85rem;">Aggiungi questo Stop</button>
             </div>
 
@@ -73,7 +80,6 @@
         <div id="google-map"></div>
     </div>
 
-    <!-- SDK Sincronizzato con il navigatore -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script>
@@ -88,31 +94,46 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        let map, geocoder, html5QrCode;
+        let map, geocoder, autocomplete, html5QrCode;
         let stops = [];
         let isProcessing = false;
         let markers = [];
-        const DEPOSITO_START = { lat: 46.6249, lng: 14.3053 };
+        let posizioneMagazzinoUgualeGPS = { lat: 46.6249, lng: 14.3053 }; // Fallback Klagenfurt centro
 
         window.initGoogleScanner = function() {
             geocoder = new google.maps.Geocoder();
+            
+            // 1. Collegamento Autocomplete di Google sull'input di testo
+            autocomplete = new google.maps.places.Autocomplete(document.getElementById('manIndirizzo'), {
+                componentRestrictions: { country: "at" }, // Limita la ricerca in Austria per comodità
+                fields: ["address_components", "geometry", "formatted_address"]
+            });
+
             map = new google.maps.Map(document.getElementById("google-map"), {
-                zoom: 12,
-                center: DEPOSITO_START,
+                zoom: 14,
+                center: posizioneMagazzinoUgualeGPS,
                 disableDefaultUI: true,
                 zoomControl: true
             });
 
-            google.maps.event.addListenerOnce(map, 'idle', function(){
-                google.maps.event.trigger(map, 'resize');
-            });
-
-            new google.maps.Marker({
-                position: DEPOSITO_START,
-                map: map,
-                title: "Deposito Madre RAR",
-                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: "#f97316", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
-            });
+            // 2. Chiediamo la geolocalizzazione precisa dell'utente per centrare la mappa
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    posizioneMagazzinoUgualeGPS = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    map.setCenter(posizioneMagazzinoUgualeGPS);
+                    
+                    // Segnaposto della tua posizione reale attuale
+                    new google.maps.Marker({
+                        position: posizioneMagazzinoUgualeGPS,
+                        map: map,
+                        title: "La tua posizione attuale",
+                        icon: { path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 5, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff" }
+                    });
+                }, () => console.log("GPS rifiutato o non raggiungibile. Uso default."));
+            }
 
             avviaFotocameraQR();
         };
@@ -120,37 +141,26 @@
         function avviaFotocameraQR() {
             html5QrCode = new Html5Qrcode("qr-reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 120, height: 120 } }, onScanSuccess)
-            .catch(err => document.getElementById('status').innerText = "Scanner Cam pronto o in modalità manuale.");
+            .catch(err => console.log("Usa inserimento manuale."));
         }
 
         async function onScanSuccess(decodedText) {
             if (isProcessing) return; 
             isProcessing = true;
-            
             document.getElementById('status').innerText = "Ricerca Spedizione... 🔄";
             try {
                 const docSnap = await db.collection("Spedizioni").doc(decodedText.trim()).get();
-
                 if (docSnap.exists) {
                     const data = docSnap.data();
-                    if (stops.some(s => s.id === decodedText.trim())) {
-                        alert("Pacco già scansionato!");
-                        isProcessing = false;
-                        return;
-                    }
+                    if (stops.some(s => s.id === decodedText.trim())) { alert("Pacco già in lista!"); isProcessing = false; return; }
 
                     geocoder.geocode({ address: data.indirizzo }, (results, geoStatus) => {
                         if (geoStatus === "OK" && results[0]) {
                             creaNuovaTappa(decodedText.trim(), data.destinatario, data.indirizzo, results[0].geometry.location, data.note || "");
-                        } else {
-                            alert("Indirizzo non riconosciuto da Google.");
                         }
                     });
-                } else {
-                    alert("Codice pacco non trovato nel database Cloud.");
-                }
+                } else { alert("Pacco non registrato."); }
             } catch (e) { console.error(e); }
-            
             setTimeout(() => { isProcessing = false; document.getElementById('status').innerText = "Inquadra il QR Code"; }, 1500);
         }
 
@@ -158,24 +168,20 @@
             const dest = document.getElementById('manDestinatario').value.trim();
             const addr = document.getElementById('manIndirizzo').value.trim();
 
-            if(!dest || !addr) {
-                alert("Compila tutti i campi!");
-                return;
-            }
+            if(!dest || !addr) { alert("Compila tutti i campi!"); return; }
 
-            document.getElementById('status').innerText = "Ricerca... 🗺️";
+            document.getElementById('status').innerText = "Verifica indirizzo... 🗺️";
 
             geocoder.geocode({ address: addr }, (results, geoStatus) => {
                 if (geoStatus === "OK" && results[0]) {
                     const fakeId = "MAN_" + Date.now();
-                    creaNuovaTappa(fakeId, dest, addr, results[0].geometry.location, "Inserito a mano");
+                    creaNuovaTappa(fakeId, dest, results[0].formatted_address, results[0].geometry.location, "A mano");
                     
                     document.getElementById('manDestinatario').value = "";
                     document.getElementById('manIndirizzo').value = "";
-                    document.getElementById('status').innerText = "Stop Aggiunto! ✅";
+                    document.getElementById('status').innerText = "Tappa Aggiunta! ✅";
                 } else {
-                    alert("Google Maps non trova questo indirizzo.");
-                    document.getElementById('status').innerText = "Pronto";
+                    alert("Indirizzo non trovato.");
                 }
             });
         };
@@ -199,14 +205,12 @@
             const marker = new google.maps.Marker({ position: googleLocation, map: map, title: destinatario });
             markers.push(marker);
             map.setCenter(googleLocation);
-
             renderStopsList();
         }
 
         function renderStopsList() {
             const container = document.getElementById('stopList');
             container.innerHTML = "";
-
             stops.forEach((s, index) => {
                 container.innerHTML += `
                     <div class="stop-item-card">
@@ -215,7 +219,7 @@
                                 <div class="stop-dest-name">👤 ${s.destinatario}</div>
                                 <div class="stop-address-text">📍 ${s.address}</div>
                             </div>
-                            <button onclick="rimuoviTappa(${index})" style="background:none; border:none; color:#f87171; font-weight:bold; font-size:1.1rem; cursor:pointer;">✕</button>
+                            <button onclick="rimuoviTappa(${index})" style="background:none; border:none; color:#f87171; font-weight:bold; cursor:pointer;">✕</button>
                         </div>
                         <div class="row-actions">
                             <div style="display:flex; align-items:center; gap:0.5rem;">
@@ -230,80 +234,49 @@
                                     <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="scattaFotoPacco(${index}, this)">
                                 </label>
                                 <div class="photo-preview-slot" id="preview-box-${index}">
-                                    ${s.fotoRiconoscimento ? `<img src="${s.fotoRiconoscimento}" style="width:100%; height:100%; object-fit:cover;">` : `<span style="font-size:0.6rem; color:#475569;">NO</span>`}
+                                    ${s.fotoRiconoscimento ? `<img src="${s.fotoRiconoscimento}" style="width:100%; height:100%; object-fit:cover; border-radius:4px;">` : `<span style="font-size:0.6rem; color:#475569;">NO</span>`}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
-        window.cambiaQuantita = function(index, variaz) {
-            stops[index].quantitaPacchi = Math.max(1, stops[index].quantitaPacchi + variaz);
-            renderStopsList();
-        };
-
-        window.rimuoviTappa = function(index) {
-            markers[index].setMap(null);
-            markers.splice(index, 1);
-            stops.splice(index, 1);
-            document.getElementById('itemsCounter').innerText = `${stops.length} Tappe`;
-            renderStopsList();
-        };
-
+        window.cambiaQuantita = function(index, variaz) { stops[index].quantitaPacchi = Math.max(1, stops[index].quantitaPacchi + variaz); renderStopsList(); };
+        window.rimuoviTappa = function(index) { markers[index].setMap(null); markers.splice(index, 1); stops.splice(index, 1); document.getElementById('itemsCounter').innerText = `${stops.length} Tappe`; renderStopsList(); };
         window.scattaFotoPacco = function(index, input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    stops[index].fotoRiconoscimento = e.target.result;
-                    renderStopsList();
-                };
+                reader.onload = function(e) { stops[index].fotoRiconoscimento = e.target.result; renderStopsList(); };
                 reader.readAsDataURL(input.files[0]);
             }
         };
 
         window.fineScannerizzazione = async function() {
-            if (stops.length === 0) {
-                alert("Aggiungi almeno un pacco alla lista prima di salvare!");
-                return;
-            }
-
-            let idRotta = prompt("Inserisci il codice numerico da assegnare a questa rotta (es. 101):");
+            if (stops.length === 0) { alert("Lista vuota!"); return; }
+            let idRotta = prompt("Inserisci il codice numerico della rotta (es. 101):");
             if (!idRotta) return;
-            idRotta = idRotta.trim();
 
-            let rottaOttimizzata = ottimizzaPercorsoLogistico(DEPOSITO_START, stops);
-            document.getElementById('status').innerText = "Salvataggio Cloud... ☁️";
-
+            let rottaOttimizzata = ottimizzaPercorsoLogistico(posizioneMagazzinoUgualeGPS, stops);
             try {
-                // Scrittura diretta e forzata su Firestore
-                await db.collection("Rotte").doc(idRotta).set({
-                    codiceRotta: idRotta,
+                await db.collection("Rotte").doc(idRotta.trim()).set({
+                    codiceRotta: idRotta.trim(),
                     dataCreazione: new Date().toLocaleDateString('it-IT'),
                     stato: "Pronta",
                     tappe: rottaOttimizzata
                 });
-
-                alert(`Perfetto! La Rotta ${idRotta} è stata salvata sul Cloud ed è pronta per il corriere.`);
+                alert("Rotta salvata sul cloud!");
                 window.location.href = "spazio-lavoratore.html";
-            } catch (error) {
-                console.error("Errore salvataggio Firestore: ", error);
-                alert("Errore durante il salvataggio su Cloud. Controlla la connessione.");
-            }
+            } catch (error) { alert("Errore di salvataggio."); }
         };
 
         function ottimizzaPercorsoLogistico(puntoPartenza, listaStops) {
-            let insoluti = [...listaStops];
-            let percorsoRisolto = [];
-            let posizioneAttuale = puntoPartenza;
-
+            let insoluti = [...listaStops]; let percorsoRisolto = []; let posizioneAttuale = puntoPartenza;
             while (insoluti.length > 0) {
-                let indicePiuVicino = 0;
-                let distanzaMinima = Infinity;
+                let indicePiuVicino = 0; let distanzaMinima = Infinity;
                 for (let i = 0; i < insoluti.length; i++) {
                     let d = Math.sqrt(Math.pow(posizioneAttuale.lat - insoluti[i].lat, 2) + Math.pow(posizioneAttuale.lng - insoluti[i].lng, 2));
-                    if (d < distanceMinima) { distanzaMinima = d; indicePiuVicino = i; }
+                    if (d < distanzaMinima) { distanzaMinima = d; indicePiuVicino = i; }
                 }
                 let stopScelto = insoluti.splice(indicePiuVicino, 1)[0];
                 percorsoRisolto.push(stopScelto);
@@ -312,6 +285,7 @@
             return percorsoRisolto;
         }
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&callback=initGoogleScanner"></script>
+    <!-- NOTA: caricamento librerie estese con "&libraries=places" -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&libraries=places&callback=initGoogleScanner"></script>
 </body>
 </html>
