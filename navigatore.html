@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Navigatore Professionale</title>
+    <title>RAR Logistik - Navigatore Professionale 3D</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -23,19 +23,16 @@
         .btn-parked { background: #3b82f6; color: white; }
         .btn-consegna { background: #22c55e; color: white; }
 
-        .pacco-details-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; max-height: 280px; overflow-y: auto; }
+        .pacco-details-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; max-height: 250px; overflow-y: auto; }
         .pacco-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem; margin-top: 0.75rem; }
         .pacco-label:first-child { margin-top: 0; }
         .pacco-value { font-size: 1.05rem; font-weight: 800; color: #ffffff; }
         
-        /* Griglie e Input */
         .consegna-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem; }
         .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 1rem 0.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.85rem; text-align: center; }
         .option-btn:hover { border-color: #f97316; background: #334155; }
         
         .input-text-premium { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 0.65rem; border-radius: 8px; font-family: inherit; box-sizing: border-box; margin-bottom: 0.75rem; }
-        
-        /* Canvas della Firma */
         #signature-canvas { background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: crosshair; display: block; width: 100%; height: 100px; box-sizing: border-box; }
         
         .hidden { display: none !important; }
@@ -57,7 +54,6 @@
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
-            <!-- FASE 1: PANORAMICA (PRIMA DI PARTIRE) -->
             <div id="panelPanoramica">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtPanETA">-- Min</div>
@@ -66,7 +62,6 @@
                 <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione</button>
             </div>
 
-            <!-- FASE 2: IN VIAGGIO (NAVIGAZIONE ATTIVA) -->
             <div id="panelInViaggio" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtETA">-- Min</div>
@@ -75,7 +70,6 @@
                 <button onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked">🅿️ Sono Arrivato sul Posto</button>
             </div>
 
-            <!-- FASE 3: GESTIONE CONSEGNA -->
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
@@ -83,7 +77,6 @@
                     <div class="pacco-label">📦 Colli in Consegna</div>
                     <div class="pacco-value" id="txtNumeroColli" style="color:#f97316;">1</div>
 
-                    <!-- Selezione Tipo Esito -->
                     <div id="boxSceltaEsito">
                         <div class="pacco-label">Scegli Modalità di Chiusura:</div>
                         <div class="consegna-options-grid">
@@ -92,7 +85,6 @@
                         </div>
                     </div>
 
-                    <!-- Sotto-pannello A Mani (Nome + Firma) -->
                     <div id="boxEsitoMano" class="hidden">
                         <div class="pacco-label">Nome di chi riceve il pacco:</div>
                         <input type="text" id="txtNomeRicevente" class="input-text-premium" placeholder="Es. Mario Rossi">
@@ -101,7 +93,6 @@
                         <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; font-size:0.75rem; font-weight:700; margin-top:0.25rem; cursor:pointer;">🧹 Cancella Firma</button>
                     </div>
 
-                    <!-- Sotto-pannello Posto Sicuro (Obbligo Foto) -->
                     <div id="boxEsitoSicuro" class="hidden">
                         <div class="pacco-label">Foto Prova Consegna (Obbligatoria):</div>
                         <label class="btn-action" style="background:#334155; color:white; font-size:0.9rem; margin-bottom:0.5rem;">
@@ -112,7 +103,6 @@
                     </div>
                 </div>
 
-                <!-- Bottone Finale di Chiusura Tappa -->
                 <button id="btnSalvaChiusura" onclick="concludiEInviaEsito()" class="btn-action btn-consegna hidden">💾 Conferma Consegna</button>
                 <button onclick="annullaSceltaEsito()" id="btnAnnullaEsito" class="hidden" style="background:none; border:none; color:#94a3b8; width:100%; font-size:0.8rem; font-weight:700; margin-top:0.5rem; cursor:pointer;">Torna indietro</button>
             </div>
@@ -141,7 +131,6 @@
         let watchId = null;
         let posizioneFurgoneGPS = { lat: 46.6249, lng: 14.3053 };
         
-        // Variabili Firma e Foto
         let tipoEsitoSelezionato = "";
         let fotoPostoSicuroBase64 = "";
         let canvas, ctx, drawing = false;
@@ -149,13 +138,18 @@
         function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({
-                polylineOptions: { strokeColor: "#f97316", strokeWeight: 6 }
+                polylineOptions: { strokeColor: "#f97316", strokeWeight: 6 },
+                suppressMarkers: false
             });
 
+            // FIX: rendering impostato su VECTOR per sbloccare inclinazione 3D e rotazione mappa fluida
             map = new google.maps.Map(document.getElementById("google-map"), {
-                zoom: 13,
+                zoom: 15,
                 center: posizioneFurgoneGPS,
-                disableDefaultUI: true
+                disableDefaultUI: true,
+                renderingType: google.maps.RenderingType.VECTOR, 
+                tilt: 0,
+                heading: 0
             });
             directionsRenderer.setMap(map);
 
@@ -163,10 +157,10 @@
                 position: posizioneFurgoneGPS,
                 map: map,
                 title: "Il tuo mezzo",
-                icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 5, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
+                icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 6, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
             });
 
-             inizializzaDisegnoFirma();
+            inizializzaDisegnoFirma();
             scaricaRottaAssegnata();
         }
 
@@ -197,19 +191,19 @@
             } else { mostraPanoramicaStatico(); }
         }
 
-        // MOSTRA ANTEPRIMA DEL PERCORSO (STATO DI QUIETE)
         function mostraPanoramicaStatico() {
             const stopCorrente = rotta[indiceAttuale];
             document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1} di ${rotta.length}`;
             document.getElementById('txtIndirizzoTarget').innerText = stopCorrente.address;
-            document.getElementById('lblStopsStatoTarget').innerText = "Prossima Tappa:";
+            document.getElementById('lblStatoTarget').innerText = "Prossima Tappa:";
 
             document.getElementById('panelPanoramica').classList.remove('hidden');
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.add('hidden');
 
-            // Setta la mappa piatta dall'alto
+            // Visuale dall'alto per la panoramica
             map.setTilt(0);
+            map.setHeading(0);
 
             directionsService.route({
                 origin: posizioneFurgoneGPS,
@@ -225,14 +219,14 @@
             });
         }
 
-        // AZIONE DI PARTENZA: IL CORRIERE INIZIA A GUIDARE
+        // FASE DI GUIDA: MODALITÀ NAVIGATORE IN REAL TIME (COME GOOGLE MAPS)
         window.avviaNavigazioneLive = function() {
             document.getElementById('panelPanoramica').classList.add('hidden');
             document.getElementById('panelInViaggio').classList.remove('hidden');
             
-            // Inclina la mappa in stile 3D navigatore reale
-            map.setTilt(45);
-            map.setZoom(17);
+            // Forza zoom ravvicinato ed inclinazione 3D reale
+            map.setZoom(19);
+            map.setTilt(55);
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
@@ -240,7 +234,11 @@
                     markerFurgone.setPosition(posizioneFurgoneGPS);
                     map.setCenter(posizioneFurgoneGPS);
 
-                    // Calcolo dinamico in movimento
+                    // FIX ROTAZIONE AUTOMATICA MAPPA: se il GPS rileva una direzione, ruota la mappa verso la marcia del furgone
+                    if (position.coords.heading !== null && !isNaN(position.coords.heading)) {
+                        map.setHeading(position.coords.heading);
+                    }
+
                     const stopCorrente = rotta[indiceAttuale];
                     directionsService.route({
                         origin: posizioneFurgoneGPS,
@@ -254,27 +252,28 @@
                             document.getElementById('txtETA').innerText = leg.duration.text;
                         }
                     });
-                }, () => console.log("Errore segnale GPS."), { enableHighAccuracy: true, maximumAge: 0 });
+                }, () => console.log("Errore segnale GPS."), { 
+                    enableHighAccuracy: true, 
+                    maximumAge: 0,
+                    timeout: 4000
+                });
             }
         };
 
-        // AZIONE DI ARRIVO AL POSTO DI PARCHEGGIO
         window.fermaArrivatoSulPosto = function() {
             if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.remove('hidden');
-            document.getElementById('lblStopsStatoTarget').innerText = "📍 Consegna sul posto:";
+            document.getElementById('lblStatoTarget').innerText = "📍 Consegna sul posto:";
 
             const stopCorrente = rotta[indiceAttuale];
             document.getElementById('txtNomeDestinatario').innerText = stopCorrente.destinatario;
             document.getElementById('txtNumeroColli').innerText = stopCorrente.quantitaPacchi || 1;
             
-            // Resetta form esiti
             annullaSceltaEsito();
         };
 
-        // LOGICA GESTIONE ESITI
         window.selezionaEsito = function(tipo) {
             tipoEsitoSelezionato = tipo;
             document.getElementById('boxSceltaEsito').classList.add('hidden');
@@ -285,7 +284,7 @@
                 document.getElementById('boxEsitoMano').classList.remove('hidden');
             } else if (tipo === 'sicuro') {
                 document.getElementById('boxEsitoSicuro').classList.remove('hidden');
-                document.getElementById('btnSalvaChiusura').classList.add('hidden'); // Sbloccato solo dopo lo scatto foto
+                document.getElementById('btnSalvaChiusura').classList.add('hidden'); 
             }
         };
 
@@ -309,13 +308,13 @@
                 reader.onload = function(e) {
                     fotoPostoSicuroBase64 = e.target.result;
                     document.getElementById('txtStatoFoto').innerText = "📸 Foto acquisita correttamente!";
-                    document.getElementById('btnSalvaChiusura').classList.remove('hidden'); // Sblocca salvataggio
+                    document.getElementById('btnSalvaChiusura').classList.remove('hidden'); 
                 };
                 reader.readAsDataURL(input.files[0]);
             }
         };
 
-        // LOGICA DI INVIO REPORT E CHIUSURA
+        // FIX ERRORE DI RETE: Corretti i riferimenti degli ID HTML interni
         window.concludiEInviaEsito = async function() {
             let dettagliEsito = {};
 
@@ -330,11 +329,11 @@
                 dettagliEsito = { esito: "Lasciato in posto sicuro", fotoProva: fotoPostoSicuroBase64 };
             }
 
-            // Aggiorna lo stop locale e spingi su Firebase
             rotta[indiceAttuale].consegnato = true;
             rotta[indiceAttuale].reportConsegna = dettagliEsito;
 
             try {
+                // Invio sicuro a Firebase
                 await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: rotta });
                 
                 indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
@@ -342,14 +341,15 @@
                     alert("Grandioso! Hai completato tutte le consegne assegnate per oggi! 🏁");
                     window.location.href = "spazio-lavoratore.html";
                 } else {
-                    alert("Tappa chiusa. Mappa pronta per la prossima consegna.");
-                    // Si ritorna alla visuale panoramica iniziale in attesa del click su "Naviga"
+                    alert("Tappa salvata con successo! In caricamento tappa successiva.");
                     mostraPanoramicaStatico();
                 }
-            } catch(e) { alert("Errore di rete durante la chiusura."); }
+            } catch(e) { 
+                console.error("Errore Firebase:", e);
+                alert("Errore di sincronizzazione con il database Cloud."); 
+            }
         };
 
-        // GESTIONE CANVAS CANVAS FIRMA
         function inizializzaDisegnoFirma() {
             canvas = document.getElementById('signature-canvas');
             ctx = canvas.getContext('2d');
@@ -359,7 +359,6 @@
             canvas.addEventListener("mousemove", (e) => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
             window.addEventListener("mouseup", () => drawing = false);
 
-            // Supporto Touch Screen Smartphone
             canvas.addEventListener("touchstart", (e) => { drawing = true; ctx.beginPath(); const t = e.touches[0]; const rect = canvas.getBoundingClientRect(); ctx.moveTo(t.clientX - rect.left, t.clientY - rect.top); e.preventDefault(); });
             canvas.addEventListener("touchmove", (e) => { if (drawing) { const t = e.touches[0]; const rect = canvas.getBoundingClientRect(); ctx.lineTo(t.clientX - rect.left, t.clientY - rect.top); ctx.stroke(); } e.preventDefault(); });
             canvas.addEventListener("touchend", () => drawing = false);
