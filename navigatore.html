@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Navigatore Professionale 3D</title>
+    <title>RAR Logistik - Navigatore Stabilizzato 3D</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -134,6 +135,9 @@
         let tipoEsitoSelezionato = "";
         let fotoPostoSicuroBase64 = "";
         let canvas, ctx, drawing = false;
+        
+        // Memoria per evitare sfarfallii del navigatore
+        let ultimoHeadingValido = 0;
 
         function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
@@ -142,7 +146,6 @@
                 suppressMarkers: false
             });
 
-            // FIX: rendering impostato su VECTOR per sbloccare inclinazione 3D e rotazione mappa fluida
             map = new google.maps.Map(document.getElementById("google-map"), {
                 zoom: 15,
                 center: posizioneFurgoneGPS,
@@ -201,7 +204,7 @@
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.add('hidden');
 
-            // Visuale dall'alto per la panoramica
+            // Reset visuale statica dall'alto per la panoramica
             map.setTilt(0);
             map.setHeading(0);
 
@@ -219,14 +222,12 @@
             });
         }
 
-        // FASE DI GUIDA: MODALITÀ NAVIGATORE IN REAL TIME (COME GOOGLE MAPS)
         window.avviaNavigazioneLive = function() {
             document.getElementById('panelPanoramica').classList.add('hidden');
             document.getElementById('panelInViaggio').classList.remove('hidden');
             
-            // Forza zoom ravvicinato ed inclinazione 3D reale
             map.setZoom(19);
-            map.setTilt(55);
+            map.setTilt(55); // Inclinazione 3D navigatore
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
@@ -234,9 +235,14 @@
                     markerFurgone.setPosition(posizioneFurgoneGPS);
                     map.setCenter(posizioneFurgoneGPS);
 
-                    // FIX ROTAZIONE AUTOMATICA MAPPA: se il GPS rileva una direzione, ruota la mappa verso la marcia del furgone
-                    if (position.coords.heading !== null && !isNaN(position.coords.heading)) {
-                        map.setHeading(position.coords.heading);
+                    // STABILIZZATORE ROTAZIONE: Ruota solo se la velocità è superiore a ~4 km/h (1.1 m/s) per evitare sfarfallii da fermo
+                    let velocita = position.coords.speed; 
+                    if (velocita && velocita > 1.1 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
+                        ultimoHeadingValido = position.coords.heading;
+                        map.setHeading(ultimoHeadingValido);
+                    } else if (ultimoHeadingValido !== 0) {
+                        // Mantiene l'ultimo orientamento stradale valido senza oscillare da sinistra a destra
+                        map.setHeading(ultimoHeadingValido);
                     }
 
                     const stopCorrente = rotta[indiceAttuale];
@@ -314,7 +320,7 @@
             }
         };
 
-        // FIX ERRORE DI RETE: Corretti i riferimenti degli ID HTML interni
+        // CORREZIONE LOGICA DI CONFERMA SICURA
         window.concludiEInviaEsito = async function() {
             let dettagliEsito = {};
 
@@ -329,24 +335,36 @@
                 dettagliEsito = { esito: "Lasciato in posto sicuro", fotoProva: fotoPostoSicuroBase64 };
             }
 
-            rotta[indiceAttuale].consegnato = true;
-            rotta[indiceAttuale].reportConsegna = dettagliEsito;
+            // Prepariamo i dati locali da salvare ma NON cambiamo lo stato di indiceAttuale prima del cloud
+            let copieTappeAggiornate = [...rotta];
+            copieTappeAggiornate[indiceAttuale].consegnato = true;
+            copieTappeAggiornate[indiceAttuale].reportConsegna = dettagliEsito;
 
             try {
-                // Invio sicuro a Firebase
-                await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: rotta });
+                // 1. Inviamo i dati al Cloud Firestore
+                await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: copieTappeAggiornate });
                 
-                indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
-                if (indiceAttuale === -1) {
+                // 2. SOLO SE il database ha risposto correttamente, allora applichiamo la modifica in locale
+                rotta = copieTappeAggiornate;
+                
+                // 3. Calcoliamo la tappa successiva
+                let prossimoIndice = rotta.findIndex(stop => !stop.consegnato);
+                
+                if (prossimoIndice === -1) {
                     alert("Grandioso! Hai completato tutte le consegne assegnate per oggi! 🏁");
                     window.location.href = "spazio-lavoratore.html";
                 } else {
-                    alert("Tappa salvata con successo! In caricamento tappa successiva.");
+                    alert("Tappa salvata con successo! Caricamento prossima destinazione.");
+                    indiceAttuale = prossimoIndice;
+                    
+                    // Pulizia grafica della mappa prima di calcolare il nuovo tragitto statico
+                    directionsRenderer.setDirections({routes: []}); 
                     mostraPanoramicaStatico();
                 }
             } catch(e) { 
-                console.error("Errore Firebase:", e);
-                alert("Errore di sincronizzazione con il database Cloud."); 
+                console.error("Errore di rete Firebase:", e);
+                alert("Errore di rete: Impossibile raggiungere il database Cloud. Riprova tra pochi secondi, i tuoi dati di consegna correnti non sono andati persi."); 
+                // Avendo bloccato l'avanzamento automatico, la schermata rimane ferma sul pacco corrente permettendoti di ripremere Conferma.
             }
         };
 
