@@ -54,16 +54,16 @@
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
-            <!-- FASE 1: PANORAMICA (PRIMA DI PARTIRE - QUELLA DELLO SCREENSHOT) -->
+            <!-- FASE 1: PANORAMICA (PRIMA DI PARTIRE) -->
             <div id="panelPanoramica">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtPanETA">-- Min</div>
                     <div class="km-box" id="txtPanKm">-- km</div>
                 </div>
-                <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione 3D</button>
+                <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione</button>
             </div>
 
-            <!-- FASE 2: IN VIAGGIO (NAVIGAZIONE REALE ATTIVA) -->
+            <!-- FASE 2: IN VIAGGIO (NAVIGAZIONE REALE ATTIVA 3D) -->
             <div id="panelInViaggio" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtETA">-- Min</div>
@@ -145,21 +145,23 @@
         let fotoPostoSicuroBase64 = "";
         let canvas, ctx, drawing = false;
         let ultimoHeadingValido = 0;
+        let modalitaGuidaAttiva = false; // Flag di controllo telecamera
 
         function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
             
+            // FIX CRITICO: suppressMarkers nasconde A e B. preserveViewport: true impedisce a Google di forzare la mappa dall'alto!
             directionsRenderer = new google.maps.DirectionsRenderer({
                 polylineOptions: { strokeColor: "#f97316", strokeWeight: 6 },
-                suppressMarkers: true 
+                suppressMarkers: true,
+                preserveViewport: true 
             });
 
-            // FIX MAP_ID: Usiamo un ID demo interno di Google per sbloccare i rendering vettoriali 3D
             map = new google.maps.Map(document.getElementById("google-map"), {
                 zoom: 15, 
                 center: posizioneFurgoneGPS, 
                 disableDefaultUI: true,
-                mapId: "DEMO_MAP_ID", 
+                mapId: "DEMO_MAP_ID", // Sblocca rendering vettoriale 3D hardware dello smartphone
                 tilt: 0, 
                 heading: 0
             });
@@ -206,6 +208,7 @@
         }
 
         function mostraPanoramicaStatico() {
+            modalitaGuidaAttiva = false;
             const stopCorrente = rotta[indiceAttuale];
             document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1} di ${rotta.length}`;
             document.getElementById('txtIndirizzoTarget').innerText = stopCorrente.address;
@@ -215,9 +218,11 @@
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.add('hidden');
 
+            // Nella panoramica inquadriamo tutto il tragitto dall'alto
             map.setTilt(0); 
             map.setHeading(0);
             map.setZoom(14);
+            map.setCenter(posizioneFurgoneGPS);
 
             const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
             markerDestinazioneVerde.setPosition(destinazioneTappa);
@@ -230,27 +235,37 @@
                     const leg = res.routes[0].legs[0];
                     document.getElementById('txtPanKm').innerText = leg.distance.text;
                     document.getElementById('txtPanETA').innerText = leg.duration.text;
+                    
+                    // Solo in modalità panoramica, lasciamo che veda i confini totali una volta sola
+                    const bounds = res.routes[0].bounds;
+                    map.fitBounds(bounds);
                 }
             });
         }
 
-        // QUESTA ATTIVA IL NAVIGATORE IN GUIDA REALE REATTIVO
+        // ATTIVAZIONE NAVIGATORE PROFESSIONALE SCHIACCIATO IN AVANTI REALE
         window.avviaNavigazioneLive = function() {
             document.getElementById('panelPanoramica').classList.add('hidden');
             document.getElementById('panelInViaggio').classList.remove('hidden');
             
-            // Applica l'inquadratura ravvicinata e schiacciata in avanti
+            modalitaGuidaAttiva = true;
+            
+            // Forza i parametri bloccati stile navigatore di serie
             map.setZoom(19); 
             map.setTilt(65); 
+            map.setCenter(posizioneFurgoneGPS);
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
+                    if (!modalitaGuidaAttiva) return; // Protezione se l'autista interrompe la guida
+
                     posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
                     
+                    // Incolla costantemente i marker e centra lo schermo sul furgone ad ogni metro
                     markerFurgone.setPosition(posizioneFurgoneGPS);
                     map.setCenter(posizioneFurgoneGPS);
 
-                    // ROTAZIONE AUTOMATICA: Ruota la telecamera nella direzione in cui si muove la macchina
+                    // ROTAZIONE MAPPA MAPS FLUIDA: Gira lo schermo seguendo la direzione di marcia del furgone
                     let velocita = position.coords.speed; 
                     if (velocita && velocita > 0.8 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
                         ultimoHeadingValido = position.coords.heading;
@@ -261,6 +276,7 @@
 
                     const stopCorrente = rotta[indiceAttuale];
                     const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
+                    markerDestinazioneVerde.setPosition(destinazioneTappa);
 
                     const rimanenti = rotta.filter(s => !s.consegnato).length;
                     document.getElementById('lblStopRimanenti').innerText = rimanenti;
@@ -279,11 +295,12 @@
                             document.getElementById('txtETA').innerText = leg.duration.text;
                         }
                     });
-                }, () => console.log("Errore tracking GPS"), { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
+                }, () => console.log("Errore GPS"), { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
             }
         };
 
         window.fermaArrivatoSulPosto = function() {
+            modalitaGuidaAttiva = false;
             if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.remove('hidden');
