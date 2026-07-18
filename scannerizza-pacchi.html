@@ -80,7 +80,10 @@
         <div id="google-map"></div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+            }
+
+
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script>
         const firebaseConfig = {  
@@ -100,14 +103,44 @@
         let markers = [];
         let posizioneMagazzinoUgualeGPS = { lat: 46.6249, lng: 14.3053 };
 
+        // Funzione per agganciare in modo sicuro Places all'input di testo
+        function setupAutocomplete() {
+            const inputElement = document.getElementById('manIndirizzo');
+            
+            if (!inputElement) {
+                // Se l'elemento non è ancora pronto nel DOM, riprova tra 100 millisecondi
+                setTimeout(setupAutocomplete, 100);
+                return;
+            }
+
+            // Disattiva il completamento automatico nativo del browser (evita sovrapposizioni grafiche su smartphone)
+            inputElement.setAttribute('autocomplete', 'one-time-code');
+
+            try {
+                autocomplete = new google.maps.places.Autocomplete(inputElement, {
+                    fields: ["geometry", "formatted_address"],
+                    types: ["address"] // Forza la ricerca solo su indirizzi reali civici
+                });
+
+                // Quando l'utente seleziona un suggerimento dalla lista, aggiorna il valore nel campo
+                autocomplete.addListener("place_changed", () => {
+                    const place = autocomplete.getPlace();
+                    if (place.formatted_address) {
+                        inputElement.value = place.formatted_address;
+                    }
+                });
+                
+                console.log("Google Places Autocomplete inizializzato con successo.");
+            } catch (e) {
+                console.error("Errore durante l'inizializzazione di Places:", e);
+            }
+        }
+
         window.initGoogleScanner = function() {
             geocoder = new google.maps.Geocoder();
             
-            // Inizializzazione sicura dell'Autocomplete all'attivazione delle API
-            const inputElement = document.getElementById('manIndirizzo');
-            autocomplete = new google.maps.places.Autocomplete(inputElement, {
-                fields: ["geometry", "formatted_address"]
-            });
+            // Avvia la procedura di aggancio sicuro per l'input stradale
+            setupAutocomplete();
 
             map = new google.maps.Map(document.getElementById("google-map"), {
                 zoom: 14,
@@ -233,7 +266,6 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    // COMPRESSIONE FOTO IN CARICO
                     const img = new Image();
                     img.src = e.target.result;
                     img.onload = function() {
@@ -278,12 +310,10 @@
                     if (d < distanzaMinima) { distanzaMinima = d; indicePiuVicino = i; }
                 }
                 let stopScelto = insoluti.splice(indicePiuVicino, 1)[0];
-                percorsoRisolto.push(stopScchosen = stopScelto);
+                percorsoRisolto.push(stopScelto);
                 posizioneAttuale = { lat: stopScelto.lat, lng: stopScelto.lng };
             }
             return percorsoRisolto;
         }
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&libraries=places&callback=initGoogleScanner"></script>
-</body>
 </html>
