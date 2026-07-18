@@ -133,7 +133,7 @@
         const db = firebase.firestore();
 
         let map, directionsService;
-        let rigaTracciatoArancione = null; // Disegnata a mano per evitare i blocchi di Google!
+        let rigaTracciatoArancione = null; 
         let rotta = [];
         let indiceAttuale = 0;
         let idRottaGlobale = "";
@@ -157,10 +157,12 @@
                 disableDefaultUI: true,
                 mapId: "DEMO_MAP_ID", 
                 tilt: 0, 
-                heading: 0
+                heading: 0,
+                // FIX 1: Abilitazione forzata dei controlli 3D per risvegliare l'accelerazione hardware dello smartphone
+                tiltControls: true,
+                rotateControls: true
             });
 
-            // Riga arancione fluida gestita direttamente da noi
             rigaTracciatoArancione = new google.maps.Polyline({
                 strokeColor: "#f97316",
                 strokeOpacity: 1.0,
@@ -221,6 +223,8 @@
 
             map.setTilt(0); 
             map.setHeading(0);
+            map.setZoom(14);
+            map.setCenter(posizioneFurgoneGPS);
 
             const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
             markerDestinazioneVerde.setPosition(destinazioneTappa);
@@ -229,7 +233,6 @@
                 origin: posizioneFurgoneGPS, destination: destinazioneTappa, travelMode: google.maps.TravelMode.DRIVING
             }, (res, status) => {
                 if (status === "OK") {
-                    // Estrae i punti del tracciato e li disegna sulla riga
                     const points = res.routes[0].overview_path;
                     rigaTracciatoArancione.setPath(points);
 
@@ -237,7 +240,6 @@
                     document.getElementById('txtPanKm').innerText = leg.distance.text;
                     document.getElementById('txtPanETA').innerText = leg.duration.text;
                     
-                    // Inquadra tutto solo all'inizio
                     const bounds = res.routes[0].bounds;
                     map.fitBounds(bounds);
                 }
@@ -249,11 +251,14 @@
             document.getElementById('panelInViaggio').classList.remove('hidden');
             
             modalitaGuidaAttiva = true;
-            
-            // ADESSO GLI PARAMETRI SONO SBLOCCATI E DOVUTI!
-            map.setZoom(19); 
-            map.setTilt(65); 
-            map.setCenter(posizioneFurgoneGPS);
+
+            // FIX 2: Usiamo i metodi espliciti setZoom e setTilt condizionati da un micro-timeout di stabilità
+            setTimeout(() => {
+                if (!modalitaGuidaAttiva) return;
+                map.setCenter(posizioneFurgoneGPS);
+                map.setZoom(19); 
+                map.setTilt(67); // Inclinazione forzata profonda
+            }, 300);
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
@@ -264,7 +269,11 @@
                     markerFurgone.setPosition(posizioneFurgoneGPS);
                     map.setCenter(posizioneFurgoneGPS);
 
-                    // ROTAZIONE AUTOMATICA: segue la direzione reale della vettura
+                    // Manteniamo costantemente forzato il tilt ad ogni aggiornamento di posizione GPS
+                    if (map.getTilt() !== 67) {
+                        map.setTilt(67);
+                    }
+
                     let velocita = position.coords.speed; 
                     if (velocita && velocita > 0.8 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
                         ultimoHeadingValido = position.coords.heading;
@@ -275,6 +284,7 @@
 
                     const stopCorrente = rotta[indiceAttuale];
                     const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
+                    markerDestinazioneVerde.setPosition(destinazioneTappa);
 
                     const rimanenti = rotta.filter(s => !s.consegnato).length;
                     document.getElementById('lblStopRimanenti').innerText = rimanenti;
@@ -384,7 +394,7 @@
                 } else {
                     alert("Tappa salvata!");
                     indiceAttuale = prossimoIndice;
-                    rigaTracciatoArancione.setPath([]); // Svuota la vecchia linea
+                    rigaTracciatoArancione.setPath([]); 
                     mostraPanoramicaStatico();
                 }
             } catch(e) { alert("Errore Cloud. Riprova."); }
