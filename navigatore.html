@@ -54,7 +54,7 @@
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
-            <!-- FASE 1: PANORAMICA (PRIMA DI PARTIRE) -->
+            <!-- FASE 1: PANORAMICA -->
             <div id="panelPanoramica">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtPanETA">-- Min</div>
@@ -63,7 +63,7 @@
                 <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione</button>
             </div>
 
-            <!-- FASE 2: IN VIAGGIO (NAVIGAZIONE REALE ATTIVA 3D) -->
+            <!-- FASE 2: IN VIAGGIO -->
             <div id="panelInViaggio" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtETA">-- Min</div>
@@ -78,7 +78,7 @@
                 <button onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked">🅿️ SONO ARRIVATO SUL POSTO</button>
             </div>
 
-            <!-- FASE 3: GESTIONE CHIUSURA CONSEGNA -->
+            <!-- FASE 3: CHIUSURA CONSEGNA -->
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
@@ -151,16 +151,15 @@
         function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
 
+            // FORZATURA RENDERING VETTORIALE ATTRAVERSO LE LIBRERIE INTERNE WEBGL
             map = new google.maps.Map(document.getElementById("google-map"), {
                 zoom: 15, 
                 center: posizioneFurgoneGPS, 
                 disableDefaultUI: true,
-                mapId: "DEMO_MAP_ID", 
-                tilt: 0, 
-                heading: 0,
-                gestureHandling: "greedy", // Sblocca totalmente i gesti (zoom e rotazioni) delle dita su smartphone!
-                tiltControls: true,
-                rotateControls: true
+                mapId: "DEMO_MAP_ID",
+                renderingType: google.maps.RenderingType.VECTOR, // Specifica l'uso del layer vettoriale 3D
+                useStaticMap: false,
+                gestureHandling: "greedy"
             });
 
             rigaTracciatoArancione = new google.maps.Polyline({
@@ -252,32 +251,35 @@
             
             modalitaGuidaAttiva = true;
 
-            // Ritardo di attivazione 3D per sincronizzazione browser hardware mobile
+            // FORZATURA ASINCRONA DELLE OPZIONI DI INCLINAZIONE PROSPETTICA
             setTimeout(() => {
                 if (!modalitaGuidaAttiva) return;
-                map.setCenter(posizioneFurgoneGPS);
-                map.setZoom(19); 
-                map.setTilt(67); // Inclinazione Maps reale abilitata!
-            }, 300);
+                map.setOptions({
+                    center: posizioneFurgoneGPS,
+                    zoom: 19,
+                    tilt: 65, // Angolazione prospettica 3D sbloccata via hardware
+                    heading: ultimoHeadingValido
+                });
+            }, 250);
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
                     if (!modalitaGuidaAttiva) return;
 
                     posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    
                     markerFurgone.setPosition(posizioneFurgoneGPS);
-                    map.setCenter(posizioneFurgoneGPS);
-
-                    if (map.getTilt() !== 67) { map.setTilt(67); }
 
                     let velocita = position.coords.speed; 
                     if (velocita && velocita > 0.8 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
                         ultimoHeadingValido = position.coords.heading;
-                        map.setHeading(ultimoHeadingValido);
-                    } else if (ultimoHeadingValido !== 0) { 
-                        map.setHeading(ultimoHeadingValido); 
                     }
+
+                    // Forza costantemente il mantenimento del tilt a 65 gradi ad ogni spostamento stradale
+                    map.setOptions({
+                        center: posizioneFurgoneGPS,
+                        tilt: 65,
+                        heading: ultimoHeadingValido
+                    });
 
                     const stopCorrente = rotta[indiceAttuale];
                     const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
@@ -364,7 +366,6 @@
         };
 
         window.concludiEInviaEsito = async function() {
-            letCircleTappe = {};
             let dettagliEsito = {};
 
             if (tipoEsitoSelezionato === 'mano') {
@@ -410,7 +411,6 @@
         }
         window.pulisciFirma = function() { if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); };
     </script>
-    <!-- CARICAMENTO FORZATO ARCHITETTURA 3D V=BETA -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&v=beta&libraries=places&callback=initMapNavigatore"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&v=beta&callback=initMapNavigatore"></script>
 </body>
 </html>
