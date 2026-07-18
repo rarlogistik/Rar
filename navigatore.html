@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -15,10 +14,10 @@
         
         /* TASTO FLOTTANTE RECENTER */
         #btnRecenter {
-            position: absolute; top: 20px; right: 20px; z-index: 100;
+            position: absolute; bottom: 20px; right: 20px; z-index: 100;
             background: #1e293b; border: 2px solid #334155; color: white;
-            padding: 10px 15px; border-radius: 50px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: none;
+            padding: 12px 16px; border-radius: 50px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none; font-size: 1.1rem;
         }
 
         .navigation-panel { background: #1e293b; border-top: 2px solid #334155; padding: 1.25rem; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 25px rgba(0,0,0,0.3); z-index: 10; }
@@ -34,13 +33,14 @@
 
         .pacco-details-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; max-height: 250px; overflow-y: auto; }
         .pacco-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem; margin-top: 0.75rem; }
+        .pacco-label:first-child { margin-top: 0; }
         .pacco-value { font-size: 1.05rem; font-weight: 800; color: #ffffff; }
         
         .consegna-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem; }
         .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 1rem 0.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.85rem; text-align: center; }
         
         .input-text-premium { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 0.65rem; border-radius: 8px; box-sizing: border-box; margin-bottom: 0.75rem; }
-        #signature-canvas { background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 8px; width: 100%; height: 100px; box-sizing: border-box; }
+        #signature-canvas { background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: crosshair; display: block; width: 100%; height: 100px; box-sizing: border-box; }
         
         .hidden { display: none !important; }
     </style>
@@ -54,7 +54,7 @@
         </header>
 
         <div id="google-map">
-            <button id="btnRecenter" onclick="riattivaSeguiFurgone()">📍</button>
+            <button id="btnRecenter" onclick="riattivaSeguiFurgone()">🎯 Ricaltra</button>
         </div>
 
         <div class="navigation-panel">
@@ -76,6 +76,12 @@
                     <div class="eta-box" id="txtETA">-- Min</div>
                     <div class="km-box" id="txtKmRimanenti">-- km</div>
                 </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase;">
+                    <span>🛑 STOP: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
+                    <span>🕒 FINE TOUR: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
+                </div>
+                
                 <button onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked">🅿️ SONO ARRIVATO SUL POSTO</button>
             </div>
 
@@ -83,9 +89,37 @@
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
                     <div class="pacco-value" id="txtNomeDestinatario">---</div>
-                    <button onclick="selezionaEsito('mano')" class="option-btn" style="width:100%; margin-top:10px;">🤝 Conferma Consegna</button>
+                    <div class="pacco-label">📦 Colli in Consegna</div>
+                    <div class="pacco-value" id="txtNumeroColli" style="color:#f97316;">1</div>
+
+                    <div id="boxSceltaEsito">
+                        <div class="pacco-label">Scegli Modalità di Chiusura:</div>
+                        <div class="consegna-options-grid">
+                            <button onclick="selezionaEsito('mano')" class="option-btn">🤝 A Mani</button>
+                            <button onclick="selezionaEsito('sicuro')" class="option-btn">🔒 Posto Sicuro</button>
+                        </div>
+                    </div>
+
+                    <div id="boxEsitoMano" class="hidden">
+                        <div class="pacco-label">Nome di chi riceve il pacco:</div>
+                        <input type="text" id="txtNomeRicevente" class="input-text-premium" placeholder="Es. Mario Rossi">
+                        <div class="pacco-label">Firma sullo schermo:</div>
+                        <canvas id="signature-canvas"></canvas>
+                        <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; font-size:0.75rem; font-weight:700; margin-top:0.25rem; cursor:pointer;">🧹 Cancella Firma</button>
+                    </div>
+
+                    <div id="boxEsitoSicuro" class="hidden">
+                        <div class="pacco-label">Foto Prova Consegna (Obbligatoria):</div>
+                        <label class="btn-action" style="background:#334155; color:white; font-size:0.9rem; margin-bottom:0.5rem;">
+                            📷 Scatta Foto Posto Sicuro
+                            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="gestisciFotoPostoSicuro(this)">
+                        </label>
+                        <div id="txtStatoFoto" style="font-size:0.8rem; color:#4ade80; text-align:center; font-weight:700;"></div>
+                    </div>
                 </div>
-                <button id="btnSalvaChiusura" onclick="concludiEInviaEsito()" class="btn-action btn-consegna hidden">💾 Salva Chiusura</button>
+
+                <button id="btnSalvaChiusura" onclick="concludiEInviaEsito()" class="btn-action btn-consegna hidden">💾 Conferma Consegna</button>
+                <button onclick="annullaSceltaEsito()" id="btnAnnullaEsito" class="hidden" style="background:none; border:none; color:#94a3b8; width:100%; font-size:0.8rem; font-weight:700; margin-top:0.5rem; cursor:pointer;">Torna indietro</button>
             </div>
         </div>
     </div>
@@ -93,7 +127,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0", authDomain: "rar-logistik-7663d.firebaseapp.com", projectId: "rar-logistik-7663d", storageBucket: "rar-logistik-7663d.firebasestorage.app", messagingSenderId: "657384053565", appId: "1:657384053565:web:fc1e812a80553f1eb08354" };    
+        const firebaseConfig = {  
+            apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",  
+            authDomain: "rar-logistik-7663d.firebaseapp.com",   
+            projectId: "rar-logistik-7663d",    
+            storageBucket: "rar-logistik-7663d.firebasestorage.app",    
+            messagingSenderId: "657384053565",  
+            appId: "1:657384053565:web:fc1e812a80553f1eb08354"  
+        };    
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -103,67 +144,319 @@
         let indiceAttuale = 0;
         let idRottaGlobale = "";
         let markerFurgone = null;
+        let markerDestinazioneVerde = null;
         let watchId = null;
         let posizioneFurgoneGPS = { lat: 46.6249, lng: 14.3053 };
         
-        // Nuove variabili di controllo
-        let isFollowing = false; 
-        let ultimoHeading = 0;
+        let tipoEsitoSelezionato = "";
+        let fotoPostoSicuroBase64 = "";
+        let canvas, ctx, drawing = false;
+        
+        let ultimoHeadingValido = 0;
+        let modalitaGuidaAttiva = false;
+        let isFollowing = false;
 
         async function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
             const { Map } = await google.maps.importLibrary("maps");
 
             map = new Map(document.getElementById("google-map"), {
-                zoom: 15, center: posizioneFurgoneGPS, disableDefaultUI: true,
-                mapId: "DEMO_MAP_ID", renderingType: google.maps.RenderingType.VECTOR,
+                zoom: 15, 
+                center: posizioneFurgoneGPS, 
+                disableDefaultUI: true,
+                mapId: "DEMO_MAP_ID", 
+                renderingType: google.maps.RenderingType.VECTOR,
                 gestureHandling: "greedy"
             });
 
-            // Sblocco interazione: se l'utente tocca la mappa, disattiviamo l'auto-lock
-            map.addListener('dragstart', () => { isFollowing = false; document.getElementById('btnRecenter').style.display = 'block'; });
+            // Se l'utente sposta manualmente la mappa, attiviamo lo sgancio e mostriamo il pulsante centratore
+            map.addListener('dragstart', () => {
+                if (!modalitaGuidaAttiva) return;
+                isFollowing = false;
+                document.getElementById('btnRecenter').style.display = 'block';
+            });
 
-            rigaTracciatoArancione = new google.maps.Polyline({ strokeColor: "#f97316", strokeOpacity: 1.0, strokeWeight: 6, map: map });
-            markerFurgone = new google.maps.Marker({ position: posizioneFurgoneGPS, map: map, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 7, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+            rigaTracciatoArancione = new google.maps.Polyline({
+                strokeColor: "#f97316",
+                strokeOpacity: 1.0,
+                strokeWeight: 6,
+                map: map
+            });
 
+            markerFurgone = new google.maps.Marker({
+                position: posizioneFurgoneGPS, map: map, title: "La tua posizione", zIndex: 10,
+                icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 7, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
+            });
+
+            markerDestinazioneVerde = new google.maps.Marker({
+                position: posizioneFurgoneGPS, map: map, title: "Destinazione", zIndex: 5,
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
+            });
+
+            inizializzaDisegnoFirma();
             scaricaRottaAssegnata();
         }
 
         window.riattivaSeguiFurgone = function() {
             isFollowing = true;
             document.getElementById('btnRecenter').style.display = 'none';
+            map.moveCamera({
+                center: posizioneFurgoneGPS,
+                zoom: 19,
+                tilt: 65,
+                heading: ultimoHeadingValido
+            });
         };
+
+        function calcolaAngoloDirezione(daPunto, aPunto) {
+            let dLng = (aPunto.lng() - daPunto.lng);
+            let dLat = (aPunto.lat() - daPunto.lat);
+            let gradi = Math.atan2(dLng, dLat) * 180 / Math.PI;
+            return (gradi + 360) % 360;
+        }
+
+        async function scaricaRottaAssegnata() {
+            let codiceRichiesto = prompt("Digita il codice rotta da caricare (es. 101):");
+            if (!codiceRichiesto) { window.location.href = "spazio-lavoratore.html"; return; }
+            idRottaGlobale = codiceRichiesto.trim();
+
+            try {
+                const docSnap = await db.collection("Rotte").doc(idRottaGlobale).get();
+                if (docSnap.exists) {
+                    rotta = docSnap.data().tappe || [];
+                    indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
+                    if (indiceAttuale === -1) { alert("Rotta già completata!"); window.location.href = "spazio-lavoratore.html"; return; }
+                    recuperaPosizioneInizialeEPanoramica();
+                } else { alert("Rotta non trovata."); scaricaRottaAssegnata(); }
+            } catch (e) { console.error(e); }
+        }
+
+        function recuperaPosizioneInizialeEPanoramica() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    markerFurgone.setPosition(posizioneFurgoneGPS);
+                    mostraPanoramicaStatico();
+                }, () => { mostraPanoramicaStatico(); });
+            } else { mostraPanoramicaStatico(); }
+        }
+
+        function mostraPanoramicaStatico() {
+            modalitaGuidaAttiva = false;
+            isFollowing = false;
+            document.getElementById('btnRecenter').style.display = 'none';
+
+            const stopCorrente = rotta[indiceAttuale];
+            document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1} di ${rotta.length}`;
+            document.getElementById('txtIndirizzoTarget').innerText = stopCorrente.address;
+            document.getElementById('lblStatoTarget').innerText = "Prossima Tappa:";
+            
+            document.getElementById('panelPanoramica').classList.remove('hidden');
+            document.getElementById('panelInViaggio').classList.add('hidden');
+            document.getElementById('panelArrivato').classList.add('hidden');
+
+            map.setTilt(0); 
+            map.setHeading(0);
+            map.setZoom(14);
+            map.setCenter(posizioneFurgoneGPS);
+
+            const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
+            markerDestinazioneVerde.setPosition(destinazioneTappa);
+
+            directionsService.route({
+                origin: posizioneFurgoneGPS, destination: destinazioneTappa, travelMode: google.maps.TravelMode.DRIVING
+            }, (res, status) => {
+                if (status === "OK") {
+                    const points = res.routes[0].overview_path;
+                    rigaTracciatoArancione.setPath(points);
+
+                    const leg = res.routes[0].legs[0];
+                    document.getElementById('txtPanKm').innerText = leg.distance.text;
+                    document.getElementById('txtPanETA').innerText = leg.duration.text;
+                    
+                    const bounds = res.routes[0].bounds;
+                    map.fitBounds(bounds);
+                }
+            });
+        }
 
         window.avviaNavigazioneLive = function() {
             document.getElementById('panelPanoramica').classList.add('hidden');
             document.getElementById('panelInViaggio').classList.remove('hidden');
+            
+            modalitaGuidaAttiva = true;
             isFollowing = true;
 
-            watchId = navigator.geolocation.watchPosition((position) => {
-                posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
-                markerFurgone.setPosition(posizioneFurgoneGPS);
+            setTimeout(() => {
+                if (!modalitaGuidaAttiva || !isFollowing) return;
+                map.moveCamera({
+                    center: posizioneFurgoneGPS,
+                    zoom: 19,
+                    tilt: 65,
+                    heading: ultimoHeadingValido
+                });
+            }, 200);
 
-                // Calcolo Heading (Direzione)
-                let heading = position.coords.heading;
-                if (heading !== null && !isNaN(heading)) ultimoHeading = heading;
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition((position) => {
+                    if (!modalitaGuidaAttiva) return;
 
-                // Se siamo in modalità "Segui", muovi camera
-                if (isFollowing) {
-                    map.moveCamera({
-                        center: posizioneFurgoneGPS,
-                        zoom: 19,
-                        tilt: 65,
-                        heading: ultimoHeading
+                    posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    markerFurgone.setPosition(posizioneFurgoneGPS);
+
+                    let velocita = position.coords.speed; 
+                    if (velocita && velocita > 0.8 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
+                        ultimoHeadingValido = position.coords.heading;
+                    }
+
+                    if (isFollowing) {
+                        map.moveCamera({
+                            center: posizioneFurgoneGPS,
+                            tilt: 65,
+                            heading: ultimoHeadingValido
+                        });
+                    }
+
+                    const stopCorrente = rotta[indiceAttuale];
+                    const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
+                    markerDestinazioneVerde.setPosition(destinazioneTappa);
+
+                    const rimanenti = rotta.filter(s => !s.consegnato).length;
+                    document.getElementById('lblStopRimanenti').innerText = rimanenti;
+
+                    const oraAttuale = new Date();
+                    oraAttuale.setMinutes(oraAttuale.getMinutes() + (rimanenti * 12));
+                    document.getElementById('lblETAEndTour').innerText = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+                    directionsService.route({
+                        origin: posizioneFurgoneGPS, destination: destinazioneTappa, travelMode: google.maps.TravelMode.DRIVING
+                    }, (res, status) => {
+                        if (status === "OK") {
+                            const points = res.routes[0].overview_path;
+                            rigaTracciatoArancione.setPath(points);
+
+                            // Fallback orientamento: se sei fermo, calcola la bussola sul tracciato stradale
+                            if ((!velocita || velocita <= 0.8) && points.length > 1) {
+                                ultimoHeadingValido = calcolaAngoloDirezione(posizioneFurgoneGPS, points[1]);
+                                if (isFollowing) {
+                                    map.moveCamera({ heading: ultimoHeadingValido });
+                                }
+                            }
+
+                            const leg = res.routes[0].legs[0];
+                            document.getElementById('txtKmRimanenti').innerText = leg.distance.text;
+                            document.getElementById('txtETA').innerText = leg.duration.text;
+                        }
                     });
-                }
-            }, null, { enableHighAccuracy: true });
+                }, () => console.log("Errore GPS"), { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
+            }
         };
 
-        // ... (resto delle funzioni di chiusura consegna, firma, foto)
-        async function scaricaRottaAssegnata() { /* ... codice esistente ... */ }
-        function mostraPanoramicaStatico() { /* ... codice esistente ... */ }
-        function fermaArrivatoSulPosto() { /* ... codice esistente ... */ }
-        function concludiEInviaEsito() { /* ... codice esistente ... */ }
+        window.fermaArrivatoSulPosto = function() {
+            modalitaGuidaAttiva = false;
+            isFollowing = false;
+            document.getElementById('btnRecenter').style.display = 'none';
+            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            
+            document.getElementById('panelInViaggio').classList.add('hidden');
+            document.getElementById('panelArrivato').classList.remove('hidden');
+            document.getElementById('lblStatoTarget').innerText = "📍 Consegna sul posto:";
+
+            const stopCorrente = rotta[indiceAttuale];
+            document.getElementById('txtNomeDestinatario').innerText = stopCorrente.destinatario;
+            document.getElementById('txtNumeroColli').innerText = stopCorrente.quantitaPacchi || 1;
+            annullaSceltaEsito();
+        };
+
+        window.selezionaEsito = function(tipo) {
+            tipoEsitoSelezionato = tipo;
+            document.getElementById('boxSceltaEsito').classList.add('hidden');
+            document.getElementById('btnSalvaChiusura').classList.remove('hidden');
+            document.getElementById('btnAnnullaEsito').classList.remove('hidden');
+
+            if (tipo === 'mano') { document.getElementById('boxEsitoMano').classList.remove('hidden'); } 
+            else if (tipo === 'sicuro') { document.getElementById('boxEsitoSicuro').classList.remove('hidden'); document.getElementById('btnSalvaChiusura').classList.add('hidden'); }
+        };
+
+        window.annullaSceltaEsito = function() {
+            tipoEsitoSelezionato = ""; fotoPostoSicuroBase64 = "";
+            document.getElementById('txtNomeRicevente').value = ""; pulisciFirma();
+            document.getElementById('txtStatoFoto').innerText = "";
+            document.getElementById('boxSceltaEsito').classList.remove('hidden');
+            document.getElementById('boxEsitoMano').classList.add('hidden'); document.getElementById('boxEsitoSicuro').classList.add('hidden');
+            document.getElementById('btnSalvaChiusura').classList.add('hidden'); document.getElementById('btnAnnullaEsito').classList.add('hidden');
+        };
+
+        window.gestisciFotoPostoSicuro = function(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const maxW = 500;
+                        const scale = maxW / img.width;
+                        const canvasCompresso = document.createElement('canvas');
+                        canvasCompresso.width = maxW;
+                        canvasCompresso.height = img.height * scale;
+                        
+                        const ctxCompresso = canvasCompresso.getContext('2d');
+                        ctxCompresso.drawImage(img, 0, 0, canvasCompresso.width, canvasCompresso.height);
+                        
+                        fotoPostoSicuroBase64 = canvasCompresso.toDataURL('image/jpeg', 0.65);
+                        document.getElementById('txtStatoFoto').innerText = "📸 Foto pronta per il Cloud!";
+                        document.getElementById('btnSalvaChiusura').classList.remove('hidden'); 
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        window.concludiEInviaEsito = async function() {
+            let dettagliEsito = {};
+
+            if (tipoEsitoSelezionato === 'mano') {
+                const nomeRicevente = document.getElementById('txtNomeRicevente').value.trim();
+                if(!nomeRicevente) { alert("Scrivi il nome di chi accetta il pacco!"); return; }
+                const firmaBase64 = canvas.toDataURL();
+                dettagliEsito = { esito: "Consegnato a mani", persona: nomeRicevente, firma: firmaBase64 };
+            } else {
+                if(!fotoPostoSicuroBase64) { alert("Scatta la foto prova prima!"); return; }
+                dettagliEsito = { esito: "Lasciato in posto sicuro", fotoProva: fotoPostoSicuroBase64 };
+            }
+
+            let copieTappeAggiornate = [...rotta];
+            copieTappeAggiornate[indiceAttuale].consegnato = true;
+            copieTappeAggiornate[indiceAttuale].reportConsegna = dettagliEsito;
+
+            try {
+                await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: copieTappeAggiornate });
+                rotta = copieTappeAggiornate;
+                let prossimoIndice = rotta.findIndex(stop => !stop.consegnato);
+                
+                if (prossimoIndice === -1) {
+                    alert("Ottimo giro! Tutte le consegne di oggi sono completate! 🏁");
+                    window.location.href = "spazio-lavoratore.html";
+                } else {
+                    alert("Tappa salvata!");
+                    indiceAttuale = prossimoIndice;
+                    rigaTracciatoArancione.setPath([]); 
+                    mostraPanoramicaStatico();
+                }
+            } catch(e) { alert("Errore Cloud. Riprova."); }
+        };
+
+        function inizializzaDisegnoFirma() {
+            canvas = document.getElementById('signature-canvas'); ctx = canvas.getContext('2d');
+            ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 3;
+            canvas.addEventListener("mousedown", (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+            canvas.addEventListener("mousemove", (e) => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
+            window.addEventListener("mouseup", () => drawing = false);
+            canvas.addEventListener("touchstart", (e) => { drawing = true; ctx.beginPath(); const t = e.touches[0]; const rect = canvas.getBoundingClientRect(); ctx.moveTo(t.clientX - rect.left, t.clientY - rect.top); e.preventDefault(); });
+            canvas.addEventListener("touchmove", (e) => { if (drawing) { const t = e.touches[0]; const rect = canvas.getBoundingClientRect(); ctx.lineTo(t.clientX - rect.left, t.clientY - rect.top); ctx.stroke(); } e.preventDefault(); });
+            canvas.addEventListener("touchend", () => drawing = false);
+        }
+        window.pulisciFirma = function() { if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); };
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&v=beta&callback=initMapNavigatore"></script>
 </body>
