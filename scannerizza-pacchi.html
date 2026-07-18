@@ -19,13 +19,21 @@
         .laser-line { position: absolute; width: 100%; height: 2px; background-color: #ef4444; box-shadow: 0 0 8px #ef4444; top: 0; animation: scanRadar 2s infinite ease-in-out; }
         @keyframes scanRadar { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
 
-        .manual-entry-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1.5rem; }
+        .manual-entry-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1.5rem; position: relative; }
         .manual-input { width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 0.6rem; border-radius: 8px; font-family: inherit; margin-bottom: 0.5rem; font-size: 0.85rem; box-sizing: border-box; }
         .manual-input:focus { border-color: #f97316; outline: none; }
 
-        /* Stile menu a tendina suggerimenti Google */
-        .pac-container { background-color: #1e293b !important; border: 1px solid #334155 !important; border-radius: 8px !important; font-family: 'Inter', sans-serif !important; z-index: 9999 !important; box-shadow: 0 8px 16px rgba(0,0,0,0.5) !important; }
-        .pac-item { color: #cbd5e1 !important; border-top: 1px solid #334155 !important; padding: 0.6rem !important; cursor: pointer; }
+        /* BLINDARE LA TENDINA DEI SUGGERIMENTI SU MOBILE */
+        .pac-container { 
+            background-color: #1e293b !important; 
+            border: 1px solid #334155 !important; 
+            border-radius: 8px !important; 
+            font-family: 'Inter', sans-serif !important; 
+            z-index: 99999 !important; /* Forza la tendina sopra a TUTTO */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6) !important; 
+            pointer-events: auto !important; /* Rende la lista cliccabile sempre */
+        }
+        .pac-item { color: #cbd5e1 !important; border-top: 1px solid #334155 !important; padding: 0.7rem 0.6rem !important; cursor: pointer !important; }
         .pac-item:hover { background-color: #293548 !important; }
         .pac-item-query { color: #ffffff !important; font-size: 0.9rem !important; }
         .pac-matched { color: #f97316 !important; }
@@ -52,8 +60,9 @@
             <button onclick="fineScannerizzazione()" style="background:#22c55e; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.85rem; padding:0.5rem 1rem; cursor:pointer;">🏁 CREA GIRO</button>
         </header>
 
-        <div class="workspace-area">
-            <div class="camera-card">
+        <!-- Aggiunto un click listener globale per chiudere la tendina toccando altrove -->
+        <div class="workspace-area" onclick="chiudiTendinaManualmente()">
+            <div class="camera-card" onclick="event.stopPropagation()">
                 <div class="camera-viewport">
                     <div id="qr-reader" style="width: 100%; height: 100%;"></div>
                     <div class="laser-box"><div class="laser-line"></div></div>
@@ -61,14 +70,14 @@
             </div>
             <div id="status" style="text-align:center; font-size:0.8rem; font-weight:700; color:#94a3b8; margin-bottom:1rem; text-transform:uppercase;">Scanner Pronto</div>
 
-            <div class="manual-entry-card">
+            <div class="manual-entry-card" onclick="event.stopPropagation()">
                 <div style="font-size:0.85rem; font-weight:800; color:#f97316; text-transform:uppercase; margin-bottom:0.75rem;">➕ Inserimento Manuale Vie</div>
                 <input type="text" id="manDestinatario" class="manual-input" placeholder="Nome Destinatario">
                 <input type="text" id="manIndirizzo" class="manual-input" placeholder="Inizia a digitare la via...">
                 <button onclick="aggiungiViaAmano()" style="width:100%; padding:0.6rem; background:#f97316; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-family:inherit; font-size:0.85rem;">Aggiungi questo Stop</button>
             </div>
 
-            <div style="margin-bottom: 1rem;">
+            <div style="margin-bottom: 1rem;" onclick="event.stopPropagation()">
                 <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:700; margin-bottom:0.75rem;">
                     <span>📦 Pacchi in Carico</span>
                     <span id="itemsCounter" style="color:#22c55e;">0 Tappe</span>
@@ -80,10 +89,7 @@
         <div id="google-map"></div>
     </div>
 
-            }
-
-
-<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script>
         const firebaseConfig = {  
@@ -103,65 +109,52 @@
         let markers = [];
         let posizioneMagazzinoUgualeGPS = { lat: 46.6249, lng: 14.3053 };
 
-        // Funzione per agganciare in modo sicuro Places all'input di testo
         function setupAutocomplete() {
             const inputElement = document.getElementById('manIndirizzo');
-            
-            if (!inputElement) {
-                // Se l'elemento non è ancora pronto nel DOM, riprova tra 100 millisecondi
-                setTimeout(setupAutocomplete, 100);
-                return;
-            }
+            if (!inputElement) { setTimeout(setupAutocomplete, 100); return; }
 
-            // Disattiva il completamento automatico nativo del browser (evita sovrapposizioni grafiche su smartphone)
             inputElement.setAttribute('autocomplete', 'one-time-code');
 
             try {
                 autocomplete = new google.maps.places.Autocomplete(inputElement, {
                     fields: ["geometry", "formatted_address"],
-                    types: ["address"] // Forza la ricerca solo su indirizzi reali civici
+                    types: ["address"]
                 });
 
-                // Quando l'utente seleziona un suggerimento dalla lista, aggiorna il valore nel campo
+                // FIX FUNZIONE SELEZIONE: Forza il riempimento immediato al tocco
                 autocomplete.addListener("place_changed", () => {
                     const place = autocomplete.getPlace();
-                    if (place.formatted_address) {
+                    if (place && place.formatted_address) {
                         inputElement.value = place.formatted_address;
                     }
                 });
-                
-                console.log("Google Places Autocomplete inizializzato con successo.");
-            } catch (e) {
-                console.error("Errore durante l'inizializzazione di Places:", e);
-            }
+            } catch (e) { console.error(e); }
         }
+
+        // FUNZIONE DI PULIZIA GRAFICA: Chiude la tendina se clicchi fuori
+        window.chiudiTendinaManualmente = function() {
+            const containers = document.querySelectorAll('.pac-container');
+            containers.forEach(container => container.style.display = 'none');
+        };
 
         window.initGoogleScanner = function() {
             geocoder = new google.maps.Geocoder();
-            
-            // Avvia la procedura di aggancio sicuro per l'input stradale
             setupAutocomplete();
 
             map = new google.maps.Map(document.getElementById("google-map"), {
-                zoom: 14,
-                center: posizioneMagazzinoUgualeGPS,
-                disableDefaultUI: true,
-                zoomControl: true
+                zoom: 14, center: posizioneMagazzinoUgualeGPS, disableDefaultUI: true, zoomControl: true
             });
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((position) => {
                     posizioneMagazzinoUgualeGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
                     map.setCenter(posizioneMagazzinoUgualeGPS);
-                    
                     new google.maps.Marker({
-                        position: posizioneMagazzinoUgualeGPS,
-                        map: map,
+                        position: posizioneMagazzinoUgualeGPS, map: map,
                         icon: { path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, scale: 5, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff" }
                     });
                 });
             }
-
             avviaFotocameraQR();
         };
 
@@ -206,7 +199,10 @@
                     document.getElementById('manDestinatario').value = "";
                     document.getElementById('manIndirizzo').value = "";
                     document.getElementById('status').innerText = "Tappa Aggiunta! ✅";
-                } else { alert("Indirizzo non trovato."); }
+                    
+                    // Chiude forzatamente i rimasugli grafici della tendina dopo l'aggiunta
+                    chiudiTendinaManualmente();
+                } else { alert("Indirizzo non trovato."); document.getElementById('status').innerText = "Scanner Pronto"; }
             });
         };
 
@@ -291,6 +287,7 @@
             let rottaOttimizzata = ottimizzaPercorsoLogistico(posizioneMagazzinoUgualeGPS, stops);
             try {
                 await db.collection("Rotte").doc(idRotta.trim()).set({
+                    documentID: idRotta.trim(),
                     codiceRotta: idRotta.trim(),
                     dataCreazione: new Date().toLocaleDateString('it-IT'),
                     stato: "Pronta",
@@ -316,4 +313,6 @@
             return percorsoRisolto;
         }
     </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&libraries=places&callback=initGoogleScanner"></script>
+</body>
 </html>
