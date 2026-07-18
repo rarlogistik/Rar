@@ -6,19 +6,23 @@
     <title>RAR Logistik - Navigatore Live 3D</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
         .nav-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: #0f172a; }
-        #google-map { width: 100%; flex: 1; min-height: 300px; position: relative; }
         
-        /* TASTO FLOTTANTE RECENTER */
+        /* AREA MAPPA CON POSIZIONAMENTO RELATIVO PER IL TASTO FLOTTANTE */
+        .map-wrapper { width: 100%; flex: 1; min-height: 300px; position: relative; }
+        #google-map { width: 100%; height: 100%; }
+        
         #btnRecenter {
-            position: absolute; bottom: 20px; right: 20px; z-index: 100;
-            background: #1e293b; border: 2px solid #334155; color: white;
-            padding: 12px 16px; border-radius: 50px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none; font-size: 1.1rem;
+            position: absolute; bottom: 20px; right: 20px; z-index: 999;
+            background: #f97316; border: 2px solid #ffffff; color: white;
+            width: 50px; height: 50px; border-radius: 50%; font-size: 1.3rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: transform 0.2s;
         }
+        #btnRecenter:active { transform: scale(0.9); }
 
         .navigation-panel { background: #1e293b; border-top: 2px solid #334155; padding: 1.25rem; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 25px rgba(0,0,0,0.3); z-index: 10; }
         .driving-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
@@ -37,9 +41,9 @@
         .pacco-value { font-size: 1.05rem; font-weight: 800; color: #ffffff; }
         
         .consegna-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem; }
-        .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 1rem 0.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.85rem; text-align: center; }
+        .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 1rem 0.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.85rem; text-align: center; }
         
-        .input-text-premium { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 0.65rem; border-radius: 8px; box-sizing: border-box; margin-bottom: 0.75rem; }
+        .input-text-premium { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 0.65rem; border-radius: 8px; font-family: inherit; box-sizing: border-box; margin-bottom: 0.75rem; }
         #signature-canvas { background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: crosshair; display: block; width: 100%; height: 100px; box-sizing: border-box; }
         
         .hidden { display: none !important; }
@@ -53,8 +57,9 @@
             <div id="lblStopAttuale" style="font-weight: 700; font-size: 0.85rem; color: #94a3b8;">Rotta RAR</div>
         </header>
 
-        <div id="google-map">
-            <button id="btnRecenter" onclick="riattivaSeguiFurgone()">🎯 Ricaltra</button>
+        <div class="map-wrapper">
+            <div id="google-map"></div>
+            <button id="btnRecenter" class="hidden" onclick="forzaRiallineamentoMappa()">🎯</button>
         </div>
 
         <div class="navigation-panel">
@@ -78,8 +83,8 @@
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase;">
-                    <span>🛑 STOP: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
-                    <span>🕒 FINE TOUR: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
+                    <span>🛑 STOP RIMANENTI: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
+                    <span>🕒 FINE GIRO STIMATA: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
                 </div>
                 
                 <button onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked">🅿️ SONO ARRIVATO SUL POSTO</button>
@@ -146,7 +151,9 @@
         let markerFurgone = null;
         let markerDestinazioneVerde = null;
         let watchId = null;
+        
         let posizioneFurgoneGPS = { lat: 46.6249, lng: 14.3053 };
+        let posizionePrecedenteGPS = null;
         
         let tipoEsitoSelezionato = "";
         let fotoPostoSicuroBase64 = "";
@@ -154,26 +161,25 @@
         
         let ultimoHeadingValido = 0;
         let modalitaGuidaAttiva = false;
-        let isFollowing = false;
+        let seguiFurgoneLock = true; // Gestisce lo sblocco telecamera manuale
 
-        async function initMapNavigatore() {
+        function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
-            const { Map } = await google.maps.importLibrary("maps");
 
-            map = new Map(document.getElementById("google-map"), {
+            map = new google.maps.Map(document.getElementById("google-map"), {
                 zoom: 15, 
                 center: posizioneFurgoneGPS, 
                 disableDefaultUI: true,
-                mapId: "DEMO_MAP_ID", 
+                mapId: "DEMO_MAP_ID",
                 renderingType: google.maps.RenderingType.VECTOR,
-                gestureHandling: "greedy"
+                gestureHandling: "greedy" // Rende fluidissimo il tocco dita
             });
 
-            // Se l'utente sposta manualmente la mappa, attiviamo lo sgancio e mostriamo il pulsante centratore
+            // Se l'autista trascina la mappa con le dita, disattiva il centramento e mostra il tasto flottante
             map.addListener('dragstart', () => {
                 if (!modalitaGuidaAttiva) return;
-                isFollowing = false;
-                document.getElementById('btnRecenter').style.display = 'block';
+                seguiFurgoneLock = false;
+                document.getElementById('btnRecenter').classList.remove('hidden');
             });
 
             rigaTracciatoArancione = new google.maps.Polyline({
@@ -197,9 +203,10 @@
             scaricaRottaAssegnata();
         }
 
-        window.riattivaSeguiFurgone = function() {
-            isFollowing = true;
-            document.getElementById('btnRecenter').style.display = 'none';
+        // CLICCANDO IL TASTO TARGET CI SI RIAGGANCIA ALLA FRECCIA BLU IN 3D
+        window.forzaRiallineamentoMappa = function() {
+            seguiFurgoneLock = true;
+            document.getElementById('btnRecenter').classList.add('hidden');
             map.moveCamera({
                 center: posizioneFurgoneGPS,
                 zoom: 19,
@@ -208,9 +215,20 @@
             });
         };
 
-        function calcolaAngoloDirezione(daPunto, aPunto) {
-            let dLng = (aPunto.lng() - daPunto.lng);
-            let dLat = (aPunto.lat() - daPunto.lat);
+        // MATEMATICA DI COMPENSAZIONE: Calcola l'angolo reale basandosi sullo spostamento metrico dei punti
+        function calcolaDistanzaMetrica(p1, p2) {
+            let R = 6371000; 
+            let dLat = (p2.lat - p1.lat) * Math.PI / 180;
+            let dLng = (p2.lng - p1.lng) * Math.PI / 180;
+            let a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+            let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function calcolaAngoloTraCoordinate(p1, p2) {
+            let dLng = p2.lng - p1.lng;
+            let dLat = p2.lat - p1.lat;
             let gradi = Math.atan2(dLng, dLat) * 180 / Math.PI;
             return (gradi + 360) % 360;
         }
@@ -243,8 +261,8 @@
 
         function mostraPanoramicaStatico() {
             modalitaGuidaAttiva = false;
-            isFollowing = false;
-            document.getElementById('btnRecenter').style.display = 'none';
+            seguiFurgoneLock = false;
+            document.getElementById('btnRecenter').classList.add('hidden');
 
             const stopCorrente = rotta[indiceAttuale];
             document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1} di ${rotta.length}`;
@@ -285,33 +303,33 @@
             document.getElementById('panelInViaggio').classList.remove('hidden');
             
             modalitaGuidaAttiva = true;
-            isFollowing = true;
-
-            setTimeout(() => {
-                if (!modalitaGuidaAttiva || !isFollowing) return;
-                map.moveCamera({
-                    center: posizioneFurgoneGPS,
-                    zoom: 19,
-                    tilt: 65,
-                    heading: ultimoHeadingValido
-                });
-            }, 200);
+            seguiFurgoneLock = true;
 
             if (navigator.geolocation) {
                 watchId = navigator.geolocation.watchPosition((position) => {
                     if (!modalitaGuidaAttiva) return;
 
-                    posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    markerFurgone.setPosition(posizioneFurgoneGPS);
-
-                    let velocita = position.coords.speed; 
-                    if (velocita && velocita > 0.8 && position.coords.heading !== null && !isNaN(position.coords.heading)) {
-                        ultimoHeadingValido = position.coords.heading;
+                    let nuovaPos = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    
+                    // BUSSOLA INTEGRATA: se ci muoviamo più di 2 metri, calcola la rotazione esatta tra i punti vettoriali
+                    if (posizionePrecedenteGPS) {
+                        let spazioPercorso = calcolaDistanzaMetrica(posizionePrecedenteGPS, nuovaPos);
+                        if (spazioPercorso > 2.5) { 
+                            ultimoHeadingValido = calcolaAngoloTraCoordinate(posizionePrecedenteGPS, nuovaPos);
+                            posizionePrecedenteGPS = nuovaPos;
+                        }
+                    } else {
+                        posizionePrecedenteGPS = nuovaPos;
                     }
 
-                    if (isFollowing) {
+                    posizioneFurgoneGPS = nuovaPos;
+                    markerFurgone.setPosition(posizioneFurgoneGPS);
+
+                    // Esegue lo spostamento ed inclinazione forzata 3D dell'hardware WebGL
+                    if (seguiFurgoneLock) {
                         map.moveCamera({
                             center: posizioneFurgoneGPS,
+                            zoom: 19,
                             tilt: 65,
                             heading: ultimoHeadingValido
                         });
@@ -335,27 +353,19 @@
                             const points = res.routes[0].overview_path;
                             rigaTracciatoArancione.setPath(points);
 
-                            // Fallback orientamento: se sei fermo, calcola la bussola sul tracciato stradale
-                            if ((!velocita || velocita <= 0.8) && points.length > 1) {
-                                ultimoHeadingValido = calcolaAngoloDirezione(posizioneFurgoneGPS, points[1]);
-                                if (isFollowing) {
-                                    map.moveCamera({ heading: ultimoHeadingValido });
-                                }
-                            }
-
                             const leg = res.routes[0].legs[0];
                             document.getElementById('txtKmRimanenti').innerText = leg.distance.text;
                             document.getElementById('txtETA').innerText = leg.duration.text;
                         }
                     });
-                }, () => console.log("Errore GPS"), { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
+                }, () => console.log("Errore GPS hardware mobile."), { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
             }
         };
 
         window.fermaArrivatoSulPosto = function() {
             modalitaGuidaAttiva = false;
-            isFollowing = false;
-            document.getElementById('btnRecenter').style.display = 'none';
+            seguiFurgoneLock = false;
+            document.getElementById('btnRecenter').classList.add('hidden');
             if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             
             document.getElementById('panelInViaggio').classList.add('hidden');
