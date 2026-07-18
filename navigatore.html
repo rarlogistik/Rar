@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Navigatore Corrieri</title>
+    <title>RAR Logistik - Navigatore Corrieri Attivo</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
         .km-box { font-size: 1.1rem; font-weight: 600; color: #94a3b8; }
         .address-box { font-size: 0.95rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; }
         
-        .btn-action { width: 100%; padding: 1rem; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; transition: background 0.2s ease; }
+        .btn-action { width: 100%; padding: 1rem; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; }
         .btn-parked { background: #f97316; color: white; }
         .btn-consegna { background: #22c55e; color: white; }
 
@@ -26,8 +26,7 @@
         .pacco-foto-preview { width: 100%; max-height: 140px; border-radius: 10px; object-fit: cover; border: 1px solid #334155; margin-top: 0.5rem; }
 
         .consegna-options-grid { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 0.75rem; }
-        .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 0.85rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: left; font-size: 0.9rem; }
-        .option-btn:hover { border-color: #f97316; }
+        .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 0.85rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -36,14 +35,14 @@
     <div class="nav-container">
         <header class="navbar" style="background:#1e293b; border-bottom: 1px solid #334155; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
             <a href="spazio-lavoratore.html" class="logo" style="text-decoration:none; font-weight:800; color:white;">RAR <span style="color:#f97316;">Logistik</span></a>
-            <div id="lblStopAttuale" style="font-weight: 700; font-size: 0.85rem; color: #94a3b8;">Caricamento...</div>
+            <div id="lblStopAttuale" style="font-weight: 700; font-size: 0.85rem; color: #94a3b8;">Sincronizzazione GPS...</div>
         </header>
 
         <div id="google-map"></div>
 
         <div class="navigation-panel">
             <div class="address-box">
-                <span style="color: #f97316;">Target:</span>
+                <span style="color: #f97316;">Prossimo Stop:</span>
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
@@ -52,40 +51,29 @@
                     <div class="eta-box" id="txtETA">-- Min</div>
                     <div class="km-box" id="txtKmRimanenti">-- km</div>
                 </div>
-                
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase;">
-                    <span>🛑 Tappe Rimanenti: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
-                    <span>🕒 Fine Stimata: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem;">
+                    <span>🛑 Tappe Mancanti: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
                 </div>
-
-                <button onclick="attivazioneArrivoParcheggio()" class="btn-action btn-parked">🅿️ Sono Arrivato</button>
+                <button onclick="attivazioneArrivoParcheggio()" class="btn-action btn-parked">🅿️ Sono Arrivato sul posto</button>
             </div>
 
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
                     <div class="pacco-value" id="txtNomeDestinatario">---</div>
-                    
-                    <div class="pacco-label">📦 Colli da Consegnare</div>
-                    <div class="pacco-value" id="txtNumeroColli" style="color:#f97316; font-size:1.3rem;">1</div>
-
+                    <div class="pacco-label">📦 Numero Colli</div>
+                    <div class="pacco-value" id="txtNumeroColli" style="color:#f97316;">1</div>
                     <div id="boxFotoMagazzino" class="hidden">
-                        <div class="pacco-label">📷 Foto del pacco caricato</div>
+                        <div class="pacco-label">📷 Foto Identificativa</div>
                         <img id="imgPaccoMagazzino" class="pacco-foto-preview" src="">
                     </div>
                 </div>
-
-                <button id="btnApriOpzioniConsegna" onclick="mostraOpzioniConsegna()" class="btn-action btn-consegna">✅ Chiudi Tappa</button>
+                <button id="btnApriOpzioniConsegna" onclick="mostraOpzioniConsegna()" class="btn-action btn-consegna">✅ Consegna Fatta</button>
                 
                 <div id="boxOpzioniChiusura" class="hidden">
-                    <div class="pacco-label" style="margin-bottom:0.5rem;">Esito Consegna:</div>
                     <div class="consegna-options-grid">
-                        <button onclick="finalizzaStatoConsegna('Consegnato nelle mani del cliente')" class="option-btn">🤝 Nelle mani del cliente</button>
-                        <button onclick="finalizzaStatoConsegna('Lasciato al vicino di casa')" class="option-btn">🚪 Al vicino</button>
-                        <label class="option-btn" style="display:block; box-sizing:border-box;">
-                            🔒 Posto sicuro (Scatta Foto)
-                            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="scattaFotoPostoSicuro(this)">
-                        </label>
+                        <button onclick="finalizzaStatoConsegna('Nelle mani del cliente')" class="option-btn">🤝 Consegnato a mani</button>
+                        <button onclick="finalizzaStatoConsegna('Lasciato in posto sicuro')" class="option-btn">🔒 Lasciato in posto sicuro</button>
                     </div>
                 </div>
             </div>
@@ -110,83 +98,106 @@
         let rotta = [];
         let indiceAttuale = 0;
         let idRottaGlobale = "";
-        let currentUser = localStorage.getItem('rar_active_user') || "Driver";
-        const DEPOSITO_START = { lat: 46.6249, lng: 14.3053 };
+        let markerFurgone = null;
+        let watchId = null;
+        let ultimaPosizioneFurgone = { lat: 46.6249, lng: 14.3053 };
 
         function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
             directionsRenderer = new google.maps.DirectionsRenderer({
-                polylineOptions: { strokeColor: "#f97316", strokeWeight: 5 }
+                polylineOptions: { strokeColor: "#f97316", strokeWeight: 6 },
+                suppressMarkers: false // Mostra la A e la B di Google automaticamente
             });
 
             map = new google.maps.Map(document.getElementById("google-map"), {
-                zoom: 14,
-                center: DEPOSITO_START,
-                disableDefaultUI: true
+                zoom: 16,
+                center: ultimaPosizioneFurgone,
+                disableDefaultUI: true,
+                heading: 0,
+                tilt: 45 // Leggera inclinazione stile navigatore reale 3D
             });
             directionsRenderer.setMap(map);
+
+            // Icona personalizzata freccia blu per il furgone del corriere
+            markerFurgone = new google.maps.Marker({
+                position: ultimaPosizioneFurgone,
+                map: map,
+                title: "Il tuo furgone",
+                icon: {
+                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                    scale: 6,
+                    fillColor: "#3b82f6",
+                    fillOpacity: 1,
+                    strokeColor: "#ffffff",
+                    strokeWeight: 2
+                }
+            });
 
             scaricaRottaAssegnata();
         }
 
         async function scaricaRottaAssegnata() {
-            let codiceRichiesto = prompt("Digita il codice rotta da caricare nel navigatore:");
-            if (!codiceRichiesto) {
-                window.location.href = "spazio-lavoratore.html";
-                return;
-            }
+            let codiceRichiesto = prompt("Digita il codice rotta da avviare:");
+            if (!codiceRichiesto) { window.location.href = "spazio-lavoratore.html"; return; }
             idRottaGlobale = codiceRichiesto.trim();
 
             try {
                 const docSnap = await db.collection("Rotte").doc(idRottaGlobale).get();
-
                 if (docSnap.exists) {
                     rotta = docSnap.data().tappe || [];
                     indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
+                    if (indiceAttuale === -1) { alert("Rotta già finita!"); window.location.href = "spazio-lavoratore.html"; return; }
                     
-                    if (indiceAttuale === -1) {
-                        alert("Ottimo lavoro! Questa rotta risulta già interamente completata.");
-                        window.location.href = "spazio-lavoratore.html";
-                        return;
-                    }
-                    aggiornaInterfacciaGuida();
-                } else {
-                    alert("Codice errato o rotta non esistente nel Cloud.");
-                    scaricaRottaAssegnata();
-                }
+                    // ATTIVAZIONE NAVIGAZIONE LIVE CON TRACKING GPS CONTINUO
+                    attivaInseguimentoGPSRealtime();
+                } else { alert("Rotta inesistente."); scaricaRottaAssegnata(); }
             } catch (e) { console.error(e); }
         }
 
-        function aggiornaInterfacciaGuida() {
+        function attivaInseguimentoGPSRealtime() {
+            if (navigator.geolocation) {
+                // watchPosition lancia la funzione ogni volta che il furgone si sposta di un metro
+                watchId = navigator.geolocation.watchPosition((position) => {
+                    ultimaPosizioneFurgone = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    // Sposta il simbolo del furgone sulla mappa dal vivo
+                    markerFurgone.setPosition(ultimaPosizioneFurgone);
+                    
+                    // Centra costantemente la telecamera sul mezzo in movimento
+                    map.animateCamera ? map.animateCamera({center: ultimaPosizioneFurgone}) : map.setCenter(ultimaPosizioneFurgone);
+
+                    // Aggiorna il calcolo del tragitto stradale dalla posizione reale al pacco
+                    calcolaPercorsoNavigazione();
+                }, (err) => console.log("Errore sensore GPS"), {
+                    enableHighAccuracy: true, // Forza il telefono ad usare il chip GPS hardware e non il Wi-Fi
+                    maximumAge: 0,
+                    timeout: 5000
+                });
+            }
+        }
+
+        function calcolaPercorsoNavigazione() {
             const stopCorrente = rotta[indiceAttuale];
-            
             document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1} di ${rotta.length}`;
             document.getElementById('txtIndirizzoTarget').innerText = stopCorrente.address;
-            
-            document.getElementById('panelInGuida').classList.remove('hidden');
-            document.getElementById('panelArrivato').classList.add('hidden');
-            document.getElementById('boxOpzioniChiusura').classList.add('hidden');
-            document.getElementById('btnApriOpzioniConsegna').classList.remove('hidden');
 
-            const km = parseFloat((1.8 + Math.random() * 2.5).toFixed(1));
-            const min = Math.round(km * 2.2);
-            document.getElementById('txtKmRimanenti').innerText = km + " km";
-            document.getElementById('txtETA').innerText = min + " Min";
-
-            const rimanenti = rotta.filter(s => !s.consegnato).length;
-            document.getElementById('lblStopRimanenti').innerText = rimanenti;
-
-            const oraAttuale = new Date();
-            oraAttuale.setMinutes(oraAttuale.getMinutes() + (rimanenti * 10));
-            document.getElementById('lblETAEndTour').innerText = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-
-            const origine = indiceAttuale === 0 ? DEPOSITO_START : { lat: rotta[indiceAttuale - 1].lat, lng: rotta[indiceAttuale - 1].lng };
             directionsService.route({
-                origin: origine,
+                origin: ultimaPosizioneFurgone, // Parte da dove ti trovi adesso realmente per strada
                 destination: { lat: stopCorrente.lat, lng: stopCorrente.lng },
                 travelMode: google.maps.TravelMode.DRIVING
             }, (res, status) => {
-                if (status === "OK") directionsRenderer.setDirections(res);
+                if (status === "OK") {
+                    directionsRenderer.setDirections(res);
+                    
+                    // Estrae km e tempi di guida reali calcolati dal traffico di Google
+                    const leg = res.routes[0].legs[0];
+                    document.getElementById('txtKmRimanenti').innerText = leg.distance.text;
+                    document.getElementById('txtETA').innerText = leg.duration.text;
+                    document.getElementById('lblStopRimanenti').innerText = rotta.filter(s => !s.consegnato).length;
+                }
             });
         }
 
@@ -194,16 +205,13 @@
             const stopCorrente = rotta[indiceAttuale];
             document.getElementById('panelInGuida').classList.add('hidden');
             document.getElementById('panelArrivato').classList.remove('hidden');
-
             document.getElementById('txtNomeDestinatario').innerText = stopCorrente.destinatario;
             document.getElementById('txtNumeroColli').innerText = stopCorrente.quantitaPacchi || 1;
 
             if(stopCorrente.fotoRiconoscimento) {
                 document.getElementById('imgPaccoMagazzino').src = stopCorrente.fotoRiconoscimento;
                 document.getElementById('boxFotoMagazzino').classList.remove('hidden');
-            } else {
-                document.getElementById('boxFotoMagazzino').classList.add('hidden');
-            }
+            } else { document.getElementById('boxFotoMagazzino').classList.add('hidden'); }
         };
 
         window.mostraOpzioniConsegna = function() {
@@ -211,37 +219,22 @@
             document.getElementById('boxOpzioniChiusura').classList.remove('hidden');
         };
 
-        window.scattaFotoPostoSicuro = function(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    try {
-                        await db.collection("GalleriaConsegne").add({
-                            driver: currentUser,
-                            destinatario: rotta[indiceAttuale].destinatario,
-                            indirizzo: rotta[indiceAttuale].address,
-                            data: new Date().toLocaleDateString('it-IT'),
-                            foto: e.target.result
-                        });
-                        finalizzaStatoConsegna('Posto Sicuro (Foto Cloud)');
-                    } catch(err) { console.error(err); }
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        };
-
         window.finalizzaStatoConsegna = async function(modalita) {
             rotta[indiceAttuale].consegnato = true;
-            
             try {
                 await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: rotta });
-                
                 indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
+                
                 if (indiceAttuale === -1) {
-                    alert("Spettacolo! Hai completato tutte le consegne di oggi!");
+                    if(watchId) navigator.geolocation.clearWatch(watchId); // Spegne il GPS per risparmiare batteria
+                    alert("Giro Consegne Terminato con Successo! 🏁");
                     window.location.href = "spazio-lavoratore.html";
                 } else {
-                    aggiornaInterfacciaGuida();
+                    document.getElementById('panelInGuida').classList.remove('hidden');
+                    document.getElementById('panelArrivato').classList.add('hidden');
+                    document.getElementById('boxOpzioniChiusura').classList.add('hidden');
+                    document.getElementById('btnApriOpzioniConsegna').classList.remove('hidden');
+                    calcolaPercorsoNavigazione();
                 }
             } catch(e) { console.error(e); }
         };
