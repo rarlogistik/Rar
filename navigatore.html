@@ -4,62 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RAR Logistik - Navigatore Live 3D</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-        .nav-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: #0f172a; }
+        :root { --bg-dark: #0f172a; --bg-card: #1e293b; --orange-rar: #f97316; --text-light: #f8fafc; --text-muted: #94a3b8; }
+        body { background-color: var(--bg-dark); color: var(--text-light); font-family: 'Inter', sans-serif; margin: 0; padding: 0; overflow: hidden; }
+        .nav-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: var(--bg-dark); position: relative; }
         
-        .map-wrapper { width: 100%; flex: 1; min-height: 300px; position: relative; }
+        .map-wrapper { width: 100%; flex: 1; position: relative; }
         #google-map { width: 100%; height: 100%; }
         
-        #btnRecenter {
-            position: absolute; bottom: 20px; right: 20px; z-index: 999;
-            background: #f97316; border: 2px solid #ffffff; color: white;
-            width: 50px; height: 50px; border-radius: 50%; font-size: 1.3rem;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: transform 0.2s;
-        }
-        #btnRecenter:active { transform: scale(0.9); }
-
-        .navigation-panel { background: #1e293b; border-top: 2px solid #334155; padding: 1.25rem; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 25px rgba(0,0,0,0.3); z-index: 10; }
+        .navigation-panel { background: var(--bg-card); border-top: 2px solid #334155; padding: 1.25rem; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 25px rgba(0,0,0,0.3); z-index: 10; }
         .driving-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
         .eta-box { font-size: 1.8rem; font-weight: 800; color: #4ade80; }
-        .km-box { font-size: 1.1rem; font-weight: 600; color: #94a3b8; }
+        .km-box { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); }
         .address-box { font-size: 0.95rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; }
         
-        .btn-action { width: 100%; padding: 1.1rem; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s; }
-        .btn-start-nav { background: #f97316; color: white; }
-        .btn-parked { background: #3b82f6; color: white; }
-        .btn-consegna { background: #22c55e; color: white; }
+        .btn-action { width: 100%; padding: 1.1rem; border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; text-transform: uppercase; color: white; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s; }
+        .btn-start-nav { background: var(--orange-rar); }
+        .btn-parked { background: #3b82f6; transition: background 0.3s, opacity 0.3s; }
+        .btn-parked:disabled { background: #475569; opacity: 0.5; cursor: not-allowed; }
+        .btn-consegna { background: #22c55e; }
 
-        .pacco-details-card { background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; max-height: 250px; overflow-y: auto; }
-        .pacco-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem; margin-top: 0.75rem; }
-        .pacco-label:first-child { margin-top: 0; }
+        .pacco-details-card { background: var(--bg-dark); border: 1px solid #334155; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; max-height: 250px; overflow-y: auto; }
+        .pacco-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem; margin-top: 0.75rem; }
         .pacco-value { font-size: 1.05rem; font-weight: 800; color: #ffffff; }
         
         .consegna-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem; }
-        .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 1rem 0.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.85rem; text-align: center; }
+        .option-btn { background: #293548; border: 1px solid #334155; color: white; padding: 1rem 0.5rem; border-radius: 12px; font-weight: 700; text-align: center; cursor: pointer; }
         
-        .input-text-premium { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 0.65rem; border-radius: 8px; font-family: inherit; box-sizing: border-box; margin-bottom: 0.75rem; }
-        #signature-canvas { background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: crosshair; display: block; width: 100%; height: 100px; box-sizing: border-box; }
+        .input-text-premium { width: 100%; background: var(--bg-dark); border: 1px solid #334155; color: white; padding: 0.8rem; border-radius: 8px; font-family: inherit; margin-bottom: 0.75rem; box-sizing: border-box; }
+        #signature-canvas { background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: crosshair; display: block; width: 100%; height: 100px; }
         
+        /* MODALS & TOASTS (Niente più alert web) */
+        .modal-overlay { position: absolute; inset: 0; background: rgba(15,23,42,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-box { background: var(--bg-card); padding: 2rem; border-radius: 20px; width: 85%; border: 1px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center; }
+        .modal-box h3 { margin-top: 0; color: var(--orange-rar); }
+        .toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: #22c55e; color: white; padding: 1rem 1.5rem; border-radius: 30px; font-weight: 700; z-index: 10000; transition: top 0.4s ease; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .toast.show { top: 20px; }
+        .toast.error { background: #ef4444; }
+
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <!-- CUSTOM TOAST -->
+    <div id="toastMessage" class="toast">Notifica</div>
+
+    <!-- MODALE INSERIMENTO ROTTA -->
+    <div id="modalRotta" class="modal-overlay">
+        <div class="modal-box">
+            <h3>Cerca Rotta</h3>
+            <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 1.5rem;">Inserisci il codice della rotta assegnata per iniziare il turno.</p>
+            <input type="text" id="inputCodiceRotta" class="input-text-premium" placeholder="Es. 101" style="text-align:center; font-size:1.2rem; font-weight:bold;">
+            <button onclick="confermaCaricamentoRotta()" class="btn-action btn-start-nav">Scarica dal Cloud</button>
+        </div>
+    </div>
+
     <div class="nav-container">
-        <header class="navbar" style="background:#1e293b; border-bottom: 1px solid #334155; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <a href="spazio-lavoratore.html" class="logo" style="text-decoration:none; font-weight:800; color:white;">RAR <span style="color:#f97316;">Logistik</span></a>
-            <div id="lblStopAttuale" style="font-weight: 700; font-size: 0.85rem; color: #94a3b8;">Rotta RAR</div>
+        <header style="background:#1e293b; border-bottom: 1px solid #334155; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 20;">
+            <div style="font-weight:800; color:white;">RAR <span style="color:#f97316;">Logistik</span></div>
+            <div id="lblStopAttuale" style="font-weight: 700; font-size: 0.85rem; color: #94a3b8;">--</div>
         </header>
 
-        <div class="map-wrapper">
-            <div id="google-map"></div>
-            <button id="btnRecenter" class="hidden" onclick="forzaRiallineamentoMappa()">🎯</button>
-        </div>
+        <div class="map-wrapper"><div id="google-map"></div></div>
 
         <div class="navigation-panel">
             <div class="address-box">
@@ -67,7 +75,8 @@
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
-            <div id="panelPanoramica">
+            <!-- FASE 1: PANORAMICA -->
+            <div id="panelPanoramica" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtPanETA">-- Min</div>
                     <div class="km-box" id="txtPanKm">-- km</div>
@@ -75,20 +84,22 @@
                 <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione</button>
             </div>
 
+            <!-- FASE 2: IN VIAGGIO -->
             <div id="panelInViaggio" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtETA">-- Min</div>
                     <div class="km-box" id="txtKmRimanenti">-- km</div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem;">
                     <span>🛑 STOP RIMANENTI: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
-                    <span>🕒 FINE GIRO STIMATA: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
+                    <span>🕒 ETA FINE: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
                 </div>
                 
-                <button onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked">🅿️ SONO ARRIVATO SUL POSTO</button>
+                <button id="btnArrivato" onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked" disabled>🅿️ RICERCA POSIZIONE...</button>
             </div>
 
+            <!-- FASE 3: CHIUSURA -->
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
@@ -97,7 +108,7 @@
                     <div class="pacco-value" id="txtNumeroColli" style="color:#f97316;">1</div>
 
                     <div id="boxSceltaEsito">
-                        <div class="pacco-label">Scegli Modalità di Chiusura:</div>
+                        <div class="pacco-label">Esito Chiusura:</div>
                         <div class="consegna-options-grid">
                             <button onclick="selezionaEsito('mano')" class="option-btn">🤝 A Mani</button>
                             <button onclick="selezionaEsito('sicuro')" class="option-btn">🔒 Posto Sicuro</button>
@@ -105,25 +116,24 @@
                     </div>
 
                     <div id="boxEsitoMano" class="hidden">
-                        <div class="pacco-label">Nome di chi riceve il pacco:</div>
+                        <div class="pacco-label">Nome ricevente:</div>
                         <input type="text" id="txtNomeRicevente" class="input-text-premium" placeholder="Es. Mario Rossi">
-                        <div class="pacco-label">Firma sullo schermo:</div>
+                        <div class="pacco-label">Firma:</div>
                         <canvas id="signature-canvas"></canvas>
-                        <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; font-size:0.75rem; font-weight:700; margin-top:0.25rem; cursor:pointer;">🧹 Cancella Firma</button>
+                        <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; cursor:pointer;">🧹 Cancella</button>
                     </div>
 
                     <div id="boxEsitoSicuro" class="hidden">
-                        <div class="pacco-label">Foto Prova Consegna (Obbligatoria):</div>
-                        <label class="btn-action" style="background:#334155; color:white; font-size:0.9rem; margin-bottom:0.5rem;">
-                            📷 Scatta Foto Posto Sicuro
-                            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="gestisciFotoPostoSicuro(this)">
+                        <div class="pacco-label">Foto Prova Consegna:</div>
+                        <label class="btn-action" style="background:#334155; margin-bottom:0.5rem;">
+                            📷 Scatta Foto
+                            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="gestisciFoto(this)">
                         </label>
-                        <div id="txtStatoFoto" style="font-size:0.8rem; color:#4ade80; text-align:center; font-weight:700;"></div>
+                        <div id="txtStatoFoto" style="font-size:0.8rem; color:#4ade80; text-align:center;"></div>
                     </div>
                 </div>
 
-                <button id="btnSalvaChiusura" onclick="concludiEInviaEsito()" class="btn-action btn-consegna hidden">💾 Conferma Consegna</button>
-                <button onclick="annullaSceltaEsito()" id="btnAnnullaEsito" class="hidden" style="background:none; border:none; color:#94a3b8; width:100%; font-size:0.8rem; font-weight:700; margin-top:0.5rem; cursor:pointer;">Torna indietro</button>
+                <button id="btnSalvaChiusura" onclick="concludiEInviaEsito()" class="btn-action btn-consegna hidden">💾 Salva nel Cloud</button>
             </div>
         </div>
     </div>
@@ -143,137 +153,93 @@
         const db = firebase.firestore();
 
         let map, directionsService;
-        let rigaTracciatoArancione = null; 
-        let rotta = [];
-        let indiceAttuale = 0;
-        let idRottaGlobale = "";
-        let markerFurgone = null;
-        let markerDestinazioneVerde = null;
-        let watchId = null;
-        
+        let rotta = [], indiceAttuale = 0, idRottaGlobale = "";
+        let markerFurgone, markerDestinazione, rigaTracciatoArancione;
         let posizioneFurgoneGPS = { lat: 46.6249, lng: 14.3053 };
-        let posizionePrecedenteGPS = null;
-        
-        let tipoEsitoSelezionato = "";
-        let fotoPostoSicuroBase64 = "";
+        let coordinateEffettiveArrivo = null;
+        let watchId = null, modalitaGuidaAttiva = false;
         let canvas, ctx, drawing = false;
-        
-        let ultimoHeadingValido = 0;
-        let modalitaGuidaAttiva = false;
-        let seguiFurgoneLock = true; 
+        let tipoEsitoSelezionato = "", fotoPostoSicuroBase64 = "";
 
-        // RIMOZIONE DEL BLOCCO ASYNC CHE CRASHAVA IL BROWSER
-        window.initMapNavigatore = function() {
+        // UI Helpers
+        function mostraToast(msg, isError = false) {
+            const t = document.getElementById('toastMessage');
+            t.innerText = msg;
+            t.className = `toast show ${isError ? 'error' : ''}`;
+            setTimeout(() => t.className = 'toast', 3500);
+        }
+
+        async function initMapNavigatore() {
             directionsService = new google.maps.DirectionsService();
+            const { Map } = await google.maps.importLibrary("maps");
 
-            map = new google.maps.Map(document.getElementById("google-map"), {
-                zoom: 15, 
-                center: posizioneFurgoneGPS, 
-                disableDefaultUI: true,
-                mapId: "8e0dc40652ac0bb96b474b6e", // Abilita il motore vettoriale 3D
-                tilt: 0,
-                heading: 0,
-                gestureHandling: "greedy" 
+            map = new Map(document.getElementById("google-map"), {
+                zoom: 15, center: posizioneFurgoneGPS, disableDefaultUI: true,
+                mapId: "DEMO_MAP_ID", renderingType: google.maps.RenderingType.VECTOR, gestureHandling: "greedy"
             });
 
-            map.addListener('dragstart', () => {
-                if (!modalitaGuidaAttiva) return;
-                seguiFurgoneLock = false;
-                document.getElementById('btnRecenter').classList.remove('hidden');
-            });
+            rigaTracciatoArancione = new google.maps.Polyline({ strokeColor: "#f97316", strokeWeight: 6, map: map });
 
-            rigaTracciatoArancione = new google.maps.Polyline({
-                strokeColor: "#f97316",
-                strokeOpacity: 1.0,
-                strokeWeight: 6,
-                map: map
-            });
-
-            markerFurgone = new google.maps.Marker({
-                position: posizioneFurgoneGPS, map: map, title: "La tua posizione", zIndex: 10,
-                icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 7, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
-            });
-
-            markerDestinazioneVerde = new google.maps.Marker({
-                position: posizioneFurgoneGPS, map: map, title: "Destinazione", zIndex: 5,
-                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 }
-            });
+            markerFurgone = new google.maps.Marker({ position: posizioneFurgoneGPS, map: map, zIndex: 10, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 7, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+            markerDestinazione = new google.maps.Marker({ position: posizioneFurgoneGPS, map: map, zIndex: 5, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
 
             inizializzaDisegnoFirma();
-            scaricaRottaAssegnata();
-        };
+            document.getElementById('modalRotta').classList.remove('hidden');
+        }
 
-        window.forzaRiallineamentoMappa = function() {
-            seguiFurgoneLock = true;
-            document.getElementById('btnRecenter').classList.add('hidden');
-            map.setCenter(posizioneFurgoneGPS);
-            map.setZoom(19);
-            map.setTilt(65);
-            map.setHeading(ultimoHeadingValido);
-        };
-
-        async function scaricaRottaAssegnata() {
-            // Ripristinato e garantito che funzioni senza crash silenti
-            let codiceRichiesto = prompt("Digita il codice rotta da caricare (es. 101):");
-            if (!codiceRichiesto) { window.location.href = "spazio-lavoratore.html"; return; }
-            idRottaGlobale = codiceRichiesto.trim();
+        async function confermaCaricamentoRotta() {
+            const input = document.getElementById('inputCodiceRotta').value.trim();
+            if (!input) { mostraToast("Inserisci un codice valido!", true); return; }
+            
+            document.getElementById('modalRotta').classList.add('hidden');
+            idRottaGlobale = input;
+            mostraToast("Ricerca rotta in corso...");
 
             try {
                 const docSnap = await db.collection("Rotte").doc(idRottaGlobale).get();
                 if (docSnap.exists) {
                     rotta = docSnap.data().tappe || [];
                     indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
-                    if (indiceAttuale === -1) { alert("Rotta già completata!"); window.location.href = "spazio-lavoratore.html"; return; }
-                    recuperaPosizioneInizialeEPanoramica();
-                } else { alert("Rotta non trovata."); scaricaRottaAssegnata(); }
-            } catch (e) { console.error(e); }
+                    if (indiceAttuale === -1) { mostraToast("Rotta già completata!", true); setTimeout(()=>location.reload(), 2000); return; }
+                    mostraToast("Rotta scaricata con successo!");
+                    avviaGPSIniziale();
+                } else { 
+                    mostraToast("Nessuna rotta trovata con questo ID.", true); 
+                    document.getElementById('modalRotta').classList.remove('hidden');
+                }
+            } catch (e) { mostraToast("Errore di connessione", true); }
         }
 
-        function recuperaPosizioneInizialeEPanoramica() {
+        function avviaGPSIniziale() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((position) => {
-                    posizioneFurgoneGPS = { lat: position.coords.latitude, lng: position.coords.longitude };
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    posizioneFurgoneGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     markerFurgone.setPosition(posizioneFurgoneGPS);
-                    mostraPanoramicaStatico();
-                }, () => { mostraPanoramicaStatico(); });
-            } else { mostraPanoramicaStatico(); }
+                    impostaPanoramica();
+                }, () => impostaPanoramica());
+            } else { impostaPanoramica(); }
         }
 
-        function mostraPanoramicaStatico() {
-            modalitaGuidaAttiva = false;
-            seguiFurgoneLock = false;
-            document.getElementById('btnRecenter').classList.add('hidden');
-
-            const stopCorrente = rotta[indiceAttuale];
-            document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1} di ${rotta.length}`;
-            document.getElementById('txtIndirizzoTarget').innerText = stopCorrente.address;
-            document.getElementById('lblStatoTarget').innerText = "Prossima Tappa:";
+        function impostaPanoramica() {
+            const stop = rotta[indiceAttuale];
+            document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1}/${rotta.length}`;
+            document.getElementById('txtIndirizzoTarget').innerText = stop.address;
             
             document.getElementById('panelPanoramica').classList.remove('hidden');
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.add('hidden');
 
-            map.setTilt(0); 
-            map.setHeading(0);
-            map.setZoom(14);
-            map.setCenter(posizioneFurgoneGPS);
-
-            const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
-            markerDestinazioneVerde.setPosition(destinazioneTappa);
+            map.setTilt(0); map.setHeading(0); map.setCenter(posizioneFurgoneGPS);
+            markerDestinazione.setPosition({ lat: stop.lat, lng: stop.lng });
 
             directionsService.route({
-                origin: posizioneFurgoneGPS, destination: destinazioneTappa, travelMode: google.maps.TravelMode.DRIVING
+                origin: posizioneFurgoneGPS, destination: { lat: stop.lat, lng: stop.lng }, travelMode: google.maps.TravelMode.DRIVING
             }, (res, status) => {
                 if (status === "OK") {
-                    const points = res.routes[0].overview_path;
-                    rigaTracciatoArancione.setPath(points);
-
-                    const leg = res.routes[0].legs[0];
-                    document.getElementById('txtPanKm').innerText = leg.distance.text;
-                    document.getElementById('txtPanETA').innerText = leg.duration.text;
-                    
-                    const bounds = res.routes[0].bounds;
-                    map.fitBounds(bounds);
+                    rigaTracciatoArancione.setPath(res.routes[0].overview_path);
+                    document.getElementById('txtPanKm').innerText = res.routes[0].legs[0].distance.text;
+                    document.getElementById('txtPanETA').innerText = res.routes[0].legs[0].duration.text;
+                    map.fitBounds(res.routes[0].bounds);
                 }
             });
         }
@@ -281,184 +247,139 @@
         window.avviaNavigazioneLive = function() {
             document.getElementById('panelPanoramica').classList.add('hidden');
             document.getElementById('panelInViaggio').classList.remove('hidden');
-            
             modalitaGuidaAttiva = true;
-            seguiFurgoneLock = true;
-            
-            // Forza istantanea del comando Camera classico
-            map.setCenter(posizioneFurgoneGPS);
-            map.setZoom(19);
-            map.setTilt(65);
+
+            setTimeout(() => { map.moveCamera({ center: posizioneFurgoneGPS, zoom: 19, tilt: 65 }); }, 200);
 
             if (navigator.geolocation) {
-                watchId = navigator.geolocation.watchPosition((position) => {
+                watchId = navigator.geolocation.watchPosition((pos) => {
                     if (!modalitaGuidaAttiva) return;
-
-                    let nuovaPos = { lat: position.coords.latitude, lng: position.coords.longitude };
-                    
-                    // MOTORE ROTAZIONE GEOMETRICO 100% AFFIDABILE
-                    if (posizionePrecedenteGPS) {
-                        let p1 = new google.maps.LatLng(posizionePrecedenteGPS.lat, posizionePrecedenteGPS.lng);
-                        let p2 = new google.maps.LatLng(nuovaPos.lat, nuovaPos.lng);
-                        
-                        // Calcola la distanza usando la libreria geometry ufficiale
-                        let spazioPercorso = google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
-                        
-                        // Se il furgone si muove per più di 1.5 metri, calcola l'angolo esatto matematicamente
-                        if (spazioPercorso > 1.5) { 
-                            let headingCalcolato = google.maps.geometry.spherical.computeHeading(p1, p2);
-                            if (headingCalcolato < 0) headingCalcolato += 360; // Trasforma da -180 a +360
-                            ultimoHeadingValido = headingCalcolato;
-                            posizionePrecedenteGPS = nuovaPos;
-                        }
-                    } else {
-                        posizionePrecedenteGPS = nuovaPos;
-                    }
-
-                    posizioneFurgoneGPS = nuovaPos;
+                    posizioneFurgoneGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     markerFurgone.setPosition(posizioneFurgoneGPS);
-
-                    // Se non stiamo usando le dita, la mappa segue e ruota forzatamente
-                    if (seguiFurgoneLock) {
-                        map.setCenter(posizioneFurgoneGPS);
-                        map.setHeading(ultimoHeadingValido);
-                        map.setTilt(65);
+                    
+                    let targetLatLng = new google.maps.LatLng(rotta[indiceAttuale].lat, rotta[indiceAttuale].lng);
+                    let currentLatLng = new google.maps.LatLng(posizioneFurgoneGPS.lat, posizioneFurgoneGPS.lng);
+                    
+                    // CONTROLLO 400 METRI
+                    let distanzaMetri = google.maps.geometry.spherical.computeDistanceBetween(currentLatLng, targetLatLng);
+                    let btn = document.getElementById('btnArrivato');
+                    
+                    if (distanzaMetri <= 400) {
+                        btn.disabled = false;
+                        btn.innerText = "🅿️ SONO ARRIVATO SUL POSTO";
+                    } else {
+                        btn.disabled = true;
+                        btn.innerText = `🅿️ A ${Math.round(distanzaMetri)}m DAL POSTO`;
                     }
 
-                    const stopCorrente = rotta[indiceAttuale];
-                    const destinazioneTappa = { lat: stopCorrente.lat, lng: stopCorrente.lng };
-                    markerDestinazioneVerde.setPosition(destinazioneTappa);
+                    let h = pos.coords.heading && pos.coords.speed > 0.8 ? pos.coords.heading : map.getHeading();
+                    map.moveCamera({ center: posizioneFurgoneGPS, tilt: 65, heading: h });
 
-                    const rimanenti = rotta.filter(s => !s.consegnato).length;
-                    document.getElementById('lblStopRimanenti').innerText = rimanenti;
-
-                    const oraAttuale = new Date();
-                    oraAttuale.setMinutes(oraAttuale.getMinutes() + (rimanenti * 12));
-                    document.getElementById('lblETAEndTour').innerText = oraAttuale.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-
-                    directionsService.route({
-                        origin: posizioneFurgoneGPS, destination: destinazioneTappa, travelMode: google.maps.TravelMode.DRIVING
-                    }, (res, status) => {
+                    // Update UI Rimanenti
+                    let rimasti = rotta.filter(s => !s.consegnato).length;
+                    document.getElementById('lblStopRimanenti').innerText = rimasti;
+                    
+                    directionsService.route({ origin: posizioneFurgoneGPS, destination: targetLatLng, travelMode: google.maps.TravelMode.DRIVING }, (res, status) => {
                         if (status === "OK") {
-                            const points = res.routes[0].overview_path;
-                            rigaTracciatoArancione.setPath(points);
-
-                            const leg = res.routes[0].legs[0];
-                            document.getElementById('txtKmRimanenti').innerText = leg.distance.text;
-                            document.getElementById('txtETA').innerText = leg.duration.text;
+                            rigaTracciatoArancione.setPath(res.routes[0].overview_path);
+                            document.getElementById('txtKmRimanenti').innerText = res.routes[0].legs[0].distance.text;
+                            document.getElementById('txtETA').innerText = res.routes[0].legs[0].duration.text;
                         }
                     });
-                }, () => console.log("Errore GPS"), { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 });
+                }, null, { enableHighAccuracy: true });
             }
         };
 
         window.fermaArrivatoSulPosto = function() {
             modalitaGuidaAttiva = false;
-            seguiFurgoneLock = false;
-            document.getElementById('btnRecenter').classList.add('hidden');
-            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            coordinateEffettiveArrivo = { ...posizioneFurgoneGPS }; // Salva posizione esatta clic
+            if (watchId) navigator.geolocation.clearWatch(watchId);
             
             document.getElementById('panelInViaggio').classList.add('hidden');
             document.getElementById('panelArrivato').classList.remove('hidden');
-            document.getElementById('lblStatoTarget').innerText = "📍 Consegna sul posto:";
-
-            const stopCorrente = rotta[indiceAttuale];
-            document.getElementById('txtNomeDestinatario').innerText = stopCorrente.destinatario;
-            document.getElementById('txtNumeroColli').innerText = stopCorrente.quantitaPacchi || 1;
-            annullaSceltaEsito();
+            
+            const stop = rotta[indiceAttuale];
+            document.getElementById('txtNomeDestinatario').innerText = stop.destinatario || "Cliente";
+            document.getElementById('txtNumeroColli').innerText = stop.quantitaPacchi || 1;
         };
 
         window.selezionaEsito = function(tipo) {
             tipoEsitoSelezionato = tipo;
             document.getElementById('boxSceltaEsito').classList.add('hidden');
             document.getElementById('btnSalvaChiusura').classList.remove('hidden');
-            document.getElementById('btnAnnullaEsito').classList.remove('hidden');
-
-            if (tipo === 'mano') { document.getElementById('boxEsitoMano').classList.remove('hidden'); } 
-            else if (tipo === 'sicuro') { document.getElementById('boxEsitoSicuro').classList.remove('hidden'); document.getElementById('btnSalvaChiusura').classList.add('hidden'); }
+            if (tipo === 'mano') document.getElementById('boxEsitoMano').classList.remove('hidden');
+            else document.getElementById('boxEsitoSicuro').classList.remove('hidden');
         };
 
-        window.annullaSceltaEsito = function() {
-            tipoEsitoSelezionato = ""; fotoPostoSicuroBase64 = "";
-            document.getElementById('txtNomeRicevente').value = ""; pulisciFirma();
-            document.getElementById('txtStatoFoto').innerText = "";
-            document.getElementById('boxSceltaEsito').classList.remove('hidden');
-            document.getElementById('boxEsitoMano').classList.add('hidden'); document.getElementById('boxEsitoSicuro').classList.add('hidden');
-            document.getElementById('btnSalvaChiusura').classList.add('hidden'); document.getElementById('btnAnnullaEsito').classList.add('hidden');
-        };
-
-        window.gestisciFotoPostoSicuro = function(input) {
+        window.gestisciFoto = function(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = function() {
-                        const maxW = 500;
-                        const scale = maxW / img.width;
-                        const canvasCompresso = document.createElement('canvas');
-                        canvasCompresso.width = maxW;
-                        canvasCompresso.height = img.height * scale;
-                        
-                        const ctxCompresso = canvasCompresso.getContext('2d');
-                        ctxCompresso.drawImage(img, 0, 0, canvasCompresso.width, canvasCompresso.height);
-                        
-                        fotoPostoSicuroBase64 = canvasCompresso.toDataURL('image/jpeg', 0.65);
-                        document.getElementById('txtStatoFoto').innerText = "📸 Foto pronta per il Cloud!";
-                        document.getElementById('btnSalvaChiusura').classList.remove('hidden'); 
-                    }
-                };
+                reader.onload = e => { fotoPostoSicuroBase64 = e.target.result; document.getElementById('txtStatoFoto').innerText = "📸 Acquisita!"; };
                 reader.readAsDataURL(input.files[0]);
             }
         };
 
         window.concludiEInviaEsito = async function() {
-            let dettagliEsito = {};
-
+            let dettagli = {};
             if (tipoEsitoSelezionato === 'mano') {
-                const nomeRicevente = document.getElementById('txtNomeRicevente').value.trim();
-                if(!nomeRicevente) { alert("Scrivi il nome di chi accetta il pacco!"); return; }
-                const firmaBase64 = canvas.toDataURL();
-                dettagliEsito = { esito: "Consegnato a mani", persona: nomeRicevente, firma: firmaBase64 };
+                const n = document.getElementById('txtNomeRicevente').value.trim();
+                if(!n) { mostraToast("Inserisci il nome!", true); return; }
+                dettagli = { esito: "A mani", persona: n, firma: canvas.toDataURL() };
             } else {
-                if(!fotoPostoSicuroBase64) { alert("Scatta la foto prova prima!"); return; }
-                dettagliEsito = { esito: "Lasciato in posto sicuro", fotoProva: fotoPostoSicuroBase64 };
+                if(!fotoPostoSicuroBase64) { mostraToast("Scatta la foto!", true); return; }
+                dettagli = { esito: "Posto Sicuro", fotoProva: fotoPostoSicuroBase64 };
             }
 
-            let copieTappeAggiornate = [...rotta];
-            copieTappeAggiornate[indiceAttuale].consegnato = true;
-            copieTappeAggiornate[indiceAttuale].reportConsegna = dettagliEsito;
+            mostraToast("Salvataggio nel Cloud in corso...");
+            document.getElementById('btnSalvaChiusura').disabled = true;
 
+            const stopInfo = rotta[indiceAttuale];
+            
             try {
-                await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: copieTappeAggiornate });
-                rotta = copieTappeAggiornate;
-                let prossimoIndice = rotta.findIndex(stop => !stop.consegnato);
-                
-                if (prossimoIndice === -1) {
-                    alert("Ottimo giro! Tutte le consegne di oggi sono completate! 🏁");
-                    window.location.href = "spazio-lavoratore.html";
+                // 1. Salva in "Spedizioni effettuate"
+                await db.collection("SpedizioniEffettuate").add({
+                    idRotta: idRottaGlobale,
+                    indirizzo: stopInfo.address,
+                    destinatario: stopInfo.destinatario || "Sconosciuto",
+                    dataConsegna: new Date().toISOString(),
+                    coordinateArrivo: coordinateEffettiveArrivo,
+                    colli: stopInfo.quantitaPacchi || 1,
+                    dettagliEsito: dettagli
+                });
+
+                // 2. Aggiorna Rotta
+                rotta[indiceAttuale].consegnato = true;
+                rotta[indiceAttuale].reportConsegna = dettagli;
+                await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: rotta });
+
+                let prox = rotta.findIndex(s => !s.consegnato);
+                if (prox === -1) {
+                    mostraToast("Rotta Completata! Ottimo lavoro.");
+                    setTimeout(() => window.location.reload(), 3000);
                 } else {
-                    alert("Tappa salvata!");
-                    indiceAttuale = prossimoIndice;
+                    mostraToast("Tappa salvata nel Cloud!");
+                    indiceAttuale = prox;
+                    document.getElementById('boxEsitoMano').classList.add('hidden');
+                    document.getElementById('boxEsitoSicuro').classList.add('hidden');
+                    document.getElementById('boxSceltaEsito').classList.remove('hidden');
+                    document.getElementById('btnSalvaChiusura').classList.add('hidden');
+                    document.getElementById('btnSalvaChiusura').disabled = false;
                     rigaTracciatoArancione.setPath([]); 
-                    mostraPanoramicaStatico();
+                    impostaPanoramica();
                 }
-            } catch(e) { alert("Errore Cloud. Riprova."); }
+            } catch(e) { mostraToast("Errore di rete", true); document.getElementById('btnSalvaChiusura').disabled = false; }
         };
 
         function inizializzaDisegnoFirma() {
             canvas = document.getElementById('signature-canvas'); ctx = canvas.getContext('2d');
-            ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 3;
-            canvas.addEventListener("mousedown", (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
-            canvas.addEventListener("mousemove", (e) => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
-            window.addEventListener("mouseup", () => drawing = false);
-            canvas.addEventListener("touchstart", (e) => { drawing = true; ctx.beginPath(); const t = e.touches[0]; const rect = canvas.getBoundingClientRect(); ctx.moveTo(t.clientX - rect.left, t.clientY - rect.top); e.preventDefault(); });
-            canvas.addEventListener("touchmove", (e) => { if (drawing) { const t = e.touches[0]; const rect = canvas.getBoundingClientRect(); ctx.lineTo(t.clientX - rect.left, t.clientY - rect.top); ctx.stroke(); } e.preventDefault(); });
-            canvas.addEventListener("touchend", () => drawing = false);
+            ctx.lineWidth = 3;
+            const draw = (e) => { if(drawing) { ctx.lineTo(e.offsetX || e.touches[0].clientX - canvas.getBoundingClientRect().left, e.offsetY || e.touches[0].clientY - canvas.getBoundingClientRect().top); ctx.stroke(); } e.preventDefault(); };
+            canvas.onmousedown = canvas.ontouchstart = e => { drawing = true; ctx.beginPath(); draw(e); };
+            canvas.onmousemove = canvas.ontouchmove = draw;
+            window.onmouseup = canvas.ontouchend = () => drawing = false;
         }
-        window.pulisciFirma = function() { if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); };
+        window.pulisciFirma = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
     </script>
-    <!-- CARICAMENTO API MAPS COMPRESO DI LIBRERIA "geometry" FONDAMENTALE PER LA ROTAZIONE -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&libraries=places,geometry&callback=initMapNavigatore"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvd_JFOMreUFxPpo-ADU00_Qr3-0B8HeA&v=beta&libraries=places,geometry&callback=initMapNavigatore"></script>
 </body>
 </html>
