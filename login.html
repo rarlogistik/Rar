@@ -23,21 +23,28 @@
         <input type="password" id="pass" placeholder="Password">
         <button onclick="eseguiLogin()">Accedi al Sistema</button>
     </div>
-
-    <script>
+<script>
         function eseguiLogin() {
-            let u = document.getElementById('user').value.trim();
+            // Trasforma tutto in minuscolo per evitare errori di battitura
+            let u = document.getElementById('user').value.trim().toLowerCase();
             let p = document.getElementById('pass').value.trim();
 
-            if (u === "PICK-UP" && p === "RAR") {
-                window.location.href = "scanner-ritiri.html";
-            } else if (u === "MANAGER" && p === "RAR") {
+            if (u === "" || p === "") {
+                alert("Inserisci username e password!");
+                return;
+            }
+
+            // CONTROLLO ACCOUNT: Dashboard Manager / Admin
+            if (u === "admin" || u === "manager") {
                 window.location.href = "dashboard.html";
-            } else if (u !== "" && p !== "") {
-                // Autista generico
+            } 
+            // CONTROLLO ACCOUNT: Addetti allo scanner (Pick-Up / RAR Scanner)
+            else if (u === "pick-up" || u === "pick up" || u === "rar scanner") {
+                window.location.href = "scanner-ritiri.html";
+            } 
+            // SE NON È NESSUNO DEI PRECEDENTI, ALLORA È UN AUTISTA
+            else {
                 window.location.href = "navigatore.html";
-            } else {
-                alert("Inserisci le credenziali");
             }
         }
     </script>
