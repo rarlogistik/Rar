@@ -3,57 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Login</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>RAR Logistik - Accesso</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .login-card { background: #1e293b; width: 100%; max-width: 400px; padding: 2.5rem 2rem; border-radius: 24px; border: 1px solid #334155; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4); text-align: center; box-sizing: border-box; margin: 1rem; }
-        .login-title { font-size: 2rem; font-weight: 800; margin-bottom: 2rem; }
-        .login-title span { color: #f97316; }
-        .input-group { text-align: left; margin-bottom: 1.25rem; }
-        .input-label { font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
-        .login-input { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 0.85rem; border-radius: 12px; font-family: inherit; font-size: 1rem; box-sizing: border-box; }
-        .login-input:focus { border-color: #f97316; outline: none; }
-        .btn-login { width: 100%; padding: 1rem; background: #f97316; color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 1rem; transition: background 0.2s; }
-        .btn-login:hover { background: #ea580c; }
+        body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .login-box { background: #1e293b; padding: 2.5rem; border-radius: 16px; border: 1px solid #334155; width: 100%; max-width: 350px; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.5); }
+        h1 { font-weight: 800; font-size: 2rem; margin-bottom: 2rem; }
+        h1 span { color: #f97316; }
+        input { width: 100%; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 1rem; box-sizing: border-box; }
+        button { width: 100%; padding: 1rem; background: #f97316; color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; }
+        button:hover { background: #ea580c; }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <div class="login-title">RAR <span>Logistik</span></div>
-        
-        <div class="input-group">
-            <label class="input-label">Username</label>
-            <input type="text" id="txtUsername" class="login-input" placeholder="Inserisci il tuo username">
-        </div>
-
-        <div class="input-group">
-            <label class="input-label">Password</label>
-            <input type="password" id="txtPassword" class="login-input" placeholder="••••••••">
-        </div>
-
-        <button onclick="eseguiLogin()" class="btn-login">Accedi</button>
+    <div class="login-box">
+        <h1>RAR<span>Logistik</span></h1>
+        <input type="text" id="user" placeholder="Username (es. PICK-UP)">
+        <input type="password" id="pass" placeholder="Password">
+        <button onclick="eseguiLogin()">Accedi al Sistema</button>
     </div>
 
     <script>
         function eseguiLogin() {
-            const user = document.getElementById('txtUsername').value.trim();
-            const pass = document.getElementById('txtPassword').value.trim();
+            let u = document.getElementById('user').value.trim();
+            let p = document.getElementById('pass').value.trim();
 
-            if (!user || !pass) {
-                alert("Compila tutti i campi!");
-                return;
-            }
-
-            if (user === "RARscanner" && pass === "RAR") {
-                localStorage.setItem('rar_active_user', 'Magazzino');
-                window.location.href = "scannerizza-pacchi.html";
+            if (u === "PICK-UP" && p === "RAR") {
+                window.location.href = "scanner-ritiri.html";
+            } else if (u === "MANAGER" && p === "RAR") {
+                window.location.href = "dashboard.html";
+            } else if (u !== "" && p !== "") {
+                // Autista generico
+                window.location.href = "navigatore.html";
             } else {
-                localStorage.setItem('rar_active_user', user);
-                window.location.href = "spazio-lavoratore.html";
+                alert("Inserisci le credenziali");
             }
         }
     </script>
