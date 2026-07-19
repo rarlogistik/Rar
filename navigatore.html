@@ -236,7 +236,11 @@
                 origin: posizioneFurgoneGPS, destination: { lat: stop.lat, lng: stop.lng }, travelMode: google.maps.TravelMode.DRIVING
             }, (res, status) => {
                 if (status === "OK") {
-                    rigaTracciatoArancione.setPath(res.routes[0].overview_path);
+                    let percorsoDettagliato = [];
+res.routes[0].legs[0].steps.forEach(step => {
+    step.path.forEach(punto => percorsoDettagliato.push(punto));
+});
+rigaTracciatoArancione.setPath(percorsoDettagliato);
                     document.getElementById('txtPanKm').innerText = res.routes[0].legs[0].distance.text;
                     document.getElementById('txtPanETA').innerText = res.routes[0].legs[0].duration.text;
                     map.fitBounds(res.routes[0].bounds);
@@ -281,7 +285,11 @@
                     
                     directionsService.route({ origin: posizioneFurgoneGPS, destination: targetLatLng, travelMode: google.maps.TravelMode.DRIVING }, (res, status) => {
                         if (status === "OK") {
-                            rigaTracciatoArancione.setPath(res.routes[0].overview_path);
+                            let percorsoDettagliato = [];
+res.routes[0].legs[0].steps.forEach(step => {
+    step.path.forEach(punto => percorsoDettagliato.push(punto));
+});
+rigaTracciatoArancione.setPath(percorsoDettagliato);
                             document.getElementById('txtKmRimanenti').innerText = res.routes[0].legs[0].distance.text;
                             document.getElementById('txtETA').innerText = res.routes[0].legs[0].duration.text;
                         }
