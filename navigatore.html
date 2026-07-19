@@ -11,9 +11,18 @@
         .nav-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: 0 auto; background: var(--bg-dark); position: relative; }
         
         .map-wrapper { width: 100%; flex: 1; position: relative; }
-        #google-map { width: 100%; height: 100%; }
+        #google-map { width: 100%; height: 100%; position: relative; }
+
+        /* TASTO FLOTTANTE RECENTER */
+        #btnRecenter {
+            position: absolute; bottom: 20px; right: 20px; z-index: 100;
+            background: #1e293b; border: 2px solid #334155; color: white;
+            padding: 12px 16px; border-radius: 50px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none; font-size: 1.1rem;
+        }
         
-        .navigation-panel { background: var(--bg-card); border-top: 2px solid #334155; padding: 1.25rem; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 25px rgba(0,0,0,0.3); z-index: 10; }
+        /* Aggiunto padding-bottom generoso per evitare il taglio del pulsante su schermi piccoli */
+        .navigation-panel { background: var(--bg-card); border-top: 2px solid #334155; padding: 1.25rem 1.25rem 2.5rem 1.25rem; border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 25px rgba(0,0,0,0.3); z-index: 10; }
         .driving-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
         .eta-box { font-size: 1.8rem; font-weight: 800; color: #4ade80; }
         .km-box { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); }
@@ -35,7 +44,6 @@
         .input-text-premium { width: 100%; background: var(--bg-dark); border: 1px solid #334155; color: white; padding: 0.8rem; border-radius: 8px; font-family: inherit; margin-bottom: 0.75rem; box-sizing: border-box; }
         #signature-canvas { background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: crosshair; display: block; width: 100%; height: 100px; }
         
-        /* MODALS & TOASTS (Niente più alert web) */
         .modal-overlay { position: absolute; inset: 0; background: rgba(15,23,42,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-box { background: var(--bg-card); padding: 2rem; border-radius: 20px; width: 85%; border: 1px solid #334155; box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center; }
         .modal-box h3 { margin-top: 0; color: var(--orange-rar); }
@@ -48,10 +56,8 @@
 </head>
 <body>
 
-    <!-- CUSTOM TOAST -->
     <div id="toastMessage" class="toast">Notifica</div>
 
-    <!-- MODALE INSERIMENTO ROTTA -->
     <div id="modalRotta" class="modal-overlay">
         <div class="modal-box">
             <h3>Cerca Rotta</h3>
@@ -67,7 +73,11 @@
             <div id="lblStopAttuale" style="font-weight: 700; font-size: 0.85rem; color: #94a3b8;">--</div>
         </header>
 
-        <div class="map-wrapper"><div id="google-map"></div></div>
+        <div class="map-wrapper">
+            <div id="google-map"></div>
+            <!-- Pulsante rimesso al suo posto -->
+            <button id="btnRecenter" onclick="riattivaSeguiFurgone()">🎯 Ricaltra</button>
+        </div>
 
         <div class="navigation-panel">
             <div class="address-box">
@@ -75,7 +85,6 @@
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
-            <!-- FASE 1: PANORAMICA -->
             <div id="panelPanoramica" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtPanETA">-- Min</div>
@@ -84,7 +93,6 @@
                 <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione</button>
             </div>
 
-            <!-- FASE 2: IN VIAGGIO -->
             <div id="panelInViaggio" class="hidden">
                 <div class="driving-info-row">
                     <div class="eta-box" id="txtETA">-- Min</div>
@@ -99,7 +107,6 @@
                 <button id="btnArrivato" onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked" disabled>🅿️ RICERCA POSIZIONE...</button>
             </div>
 
-            <!-- FASE 3: CHIUSURA -->
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
                     <div class="pacco-label">👤 Destinatario</div>
@@ -158,10 +165,11 @@
         let posizioneFurgoneGPS = { lat: 46.6249, lng: 14.3053 };
         let coordinateEffettiveArrivo = null;
         let watchId = null, modalitaGuidaAttiva = false;
+        let isFollowing = false; // Variabile per lo sblocco dita rimessa
+        let ultimoHeadingValido = 0;
         let canvas, ctx, drawing = false;
         let tipoEsitoSelezionato = "", fotoPostoSicuroBase64 = "";
 
-        // UI Helpers
         function mostraToast(msg, isError = false) {
             const t = document.getElementById('toastMessage');
             t.innerText = msg;
@@ -178,6 +186,13 @@
                 mapId: "DEMO_MAP_ID", renderingType: google.maps.RenderingType.VECTOR, gestureHandling: "greedy"
             });
 
+            // LOGICA SBLOCCO MAPPA CON LE DITA RIMESSA
+            map.addListener('dragstart', () => {
+                if (!modalitaGuidaAttiva) return;
+                isFollowing = false;
+                document.getElementById('btnRecenter').style.display = 'block';
+            });
+
             rigaTracciatoArancione = new google.maps.Polyline({ strokeColor: "#f97316", strokeWeight: 6, map: map });
 
             markerFurgone = new google.maps.Marker({ position: posizioneFurgoneGPS, map: map, zIndex: 10, icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW, scale: 7, fillColor: "#3b82f6", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
@@ -185,6 +200,24 @@
 
             inizializzaDisegnoFirma();
             document.getElementById('modalRotta').classList.remove('hidden');
+        }
+
+        window.riattivaSeguiFurgone = function() {
+            isFollowing = true;
+            document.getElementById('btnRecenter').style.display = 'none';
+            map.moveCamera({
+                center: posizioneFurgoneGPS,
+                zoom: 19,
+                tilt: 65,
+                heading: ultimoHeadingValido
+            });
+        };
+
+        function calcolaAngoloDirezione(daPunto, aPunto) {
+            let dLng = (aPunto.lng() - daPunto.lng);
+            let dLat = (aPunto.lat() - daPunto.lat);
+            let gradi = Math.atan2(dLng, dLat) * 180 / Math.PI;
+            return (gradi + 360) % 360;
         }
 
         async function confermaCaricamentoRotta() {
@@ -201,6 +234,11 @@
                     rotta = docSnap.data().tappe || [];
                     indiceAttuale = rotta.findIndex(stop => !stop.consegnato);
                     if (indiceAttuale === -1) { mostraToast("Rotta già completata!", true); setTimeout(()=>location.reload(), 2000); return; }
+                    
+                    // Salva il nome dell'autista nel database
+                    let driverName = localStorage.getItem('RAR_User') || 'Autista Sconosciuto';
+                    await db.collection("Rotte").doc(idRottaGlobale).update({ autista: driverName });
+                    
                     mostraToast("Rotta scaricata con successo!");
                     avviaGPSIniziale();
                 } else { 
@@ -221,6 +259,10 @@
         }
 
         function impostaPanoramica() {
+            modalitaGuidaAttiva = false;
+            isFollowing = false;
+            document.getElementById('btnRecenter').style.display = 'none';
+
             const stop = rotta[indiceAttuale];
             document.getElementById('lblStopAttuale').innerText = `Tappa ${indiceAttuale + 1}/${rotta.length}`;
             document.getElementById('txtIndirizzoTarget').innerText = stop.address;
@@ -237,10 +279,11 @@
             }, (res, status) => {
                 if (status === "OK") {
                     let percorsoDettagliato = [];
-res.routes[0].legs[0].steps.forEach(step => {
-    step.path.forEach(punto => percorsoDettagliato.push(punto));
-});
-rigaTracciatoArancione.setPath(percorsoDettagliato);
+                    res.routes[0].legs[0].steps.forEach(step => {
+                        step.path.forEach(punto => percorsoDettagliato.push(punto));
+                    });
+                    rigaTracciatoArancione.setPath(percorsoDettagliato);
+
                     document.getElementById('txtPanKm').innerText = res.routes[0].legs[0].distance.text;
                     document.getElementById('txtPanETA').innerText = res.routes[0].legs[0].duration.text;
                     map.fitBounds(res.routes[0].bounds);
@@ -252,6 +295,7 @@ rigaTracciatoArancione.setPath(percorsoDettagliato);
             document.getElementById('panelPanoramica').classList.add('hidden');
             document.getElementById('panelInViaggio').classList.remove('hidden');
             modalitaGuidaAttiva = true;
+            isFollowing = true;
 
             setTimeout(() => { map.moveCamera({ center: posizioneFurgoneGPS, zoom: 19, tilt: 65 }); }, 200);
 
@@ -264,7 +308,6 @@ rigaTracciatoArancione.setPath(percorsoDettagliato);
                     let targetLatLng = new google.maps.LatLng(rotta[indiceAttuale].lat, rotta[indiceAttuale].lng);
                     let currentLatLng = new google.maps.LatLng(posizioneFurgoneGPS.lat, posizioneFurgoneGPS.lng);
                     
-                    // CONTROLLO 400 METRI
                     let distanzaMetri = google.maps.geometry.spherical.computeDistanceBetween(currentLatLng, targetLatLng);
                     let btn = document.getElementById('btnArrivato');
                     
@@ -276,20 +319,31 @@ rigaTracciatoArancione.setPath(percorsoDettagliato);
                         btn.innerText = `🅿️ A ${Math.round(distanzaMetri)}m DAL POSTO`;
                     }
 
-                    let h = pos.coords.heading && pos.coords.speed > 0.8 ? pos.coords.heading : map.getHeading();
-                    map.moveCamera({ center: posizioneFurgoneGPS, tilt: 65, heading: h });
+                    let velocita = pos.coords.speed; 
+                    if (velocita && velocita > 0.8 && pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
+                        ultimoHeadingValido = pos.coords.heading;
+                    }
 
-                    // Update UI Rimanenti
+                    if (isFollowing) {
+                        map.moveCamera({ center: posizioneFurgoneGPS, tilt: 65, heading: ultimoHeadingValido });
+                    }
+
                     let rimasti = rotta.filter(s => !s.consegnato).length;
                     document.getElementById('lblStopRimanenti').innerText = rimasti;
                     
                     directionsService.route({ origin: posizioneFurgoneGPS, destination: targetLatLng, travelMode: google.maps.TravelMode.DRIVING }, (res, status) => {
                         if (status === "OK") {
                             let percorsoDettagliato = [];
-res.routes[0].legs[0].steps.forEach(step => {
-    step.path.forEach(punto => percorsoDettagliato.push(punto));
-});
-rigaTracciatoArancione.setPath(percorsoDettagliato);
+                            res.routes[0].legs[0].steps.forEach(step => {
+                                step.path.forEach(punto => percorsoDettagliato.push(punto));
+                            });
+                            rigaTracciatoArancione.setPath(percorsoDettagliato);
+
+                            if ((!velocita || velocita <= 0.8) && percorsoDettagliato.length > 1) {
+                                ultimoHeadingValido = calcolaAngoloDirezione(posizioneFurgoneGPS, percorsoDettagliato[1]);
+                                if (isFollowing) map.moveCamera({ heading: ultimoHeadingValido });
+                            }
+
                             document.getElementById('txtKmRimanenti').innerText = res.routes[0].legs[0].distance.text;
                             document.getElementById('txtETA').innerText = res.routes[0].legs[0].duration.text;
                         }
@@ -300,7 +354,9 @@ rigaTracciatoArancione.setPath(percorsoDettagliato);
 
         window.fermaArrivatoSulPosto = function() {
             modalitaGuidaAttiva = false;
-            coordinateEffettiveArrivo = { ...posizioneFurgoneGPS }; // Salva posizione esatta clic
+            isFollowing = false;
+            document.getElementById('btnRecenter').style.display = 'none';
+            coordinateEffettiveArrivo = { ...posizioneFurgoneGPS }; 
             if (watchId) navigator.geolocation.clearWatch(watchId);
             
             document.getElementById('panelInViaggio').classList.add('hidden');
@@ -344,7 +400,6 @@ rigaTracciatoArancione.setPath(percorsoDettagliato);
             const stopInfo = rotta[indiceAttuale];
             
             try {
-                // 1. Salva in "Spedizioni effettuate"
                 await db.collection("SpedizioniEffettuate").add({
                     idRotta: idRottaGlobale,
                     indirizzo: stopInfo.address,
@@ -355,7 +410,6 @@ rigaTracciatoArancione.setPath(percorsoDettagliato);
                     dettagliEsito: dettagli
                 });
 
-                // 2. Aggiorna Rotta
                 rotta[indiceAttuale].consegnato = true;
                 rotta[indiceAttuale].reportConsegna = dettagli;
                 await db.collection("Rotte").doc(idRottaGlobale).update({ tappe: rotta });
