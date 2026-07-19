@@ -27,7 +27,7 @@
         <div id="errorMsg" class="error-msg">Inserisci Username e Password validi!</div>
     </div>
 
-    <script>
+<script>
         function eseguiLogin() {
             // Prende i dati, toglie gli spazi vuoti accidentali e trasforma tutto in minuscolo
             let u = document.getElementById('user').value.trim().toLowerCase();
@@ -43,21 +43,20 @@
 
             // REGOLA 1: MANAGER / ADMIN -> Va alla Dashboard
             if (u === "admin" || u === "manager") {
-                window.location.href = "dashboard-admin.html";
+                window.location.href = "dashboard-admin.html"; // Corretto!
             } 
-            // REGOLA 2: ADDETTI SCANNER -> Vanno al lettore di codici a barre
-            else if (u === "pick-up" || u === "pick up" || u === "scanner") {
+            // REGOLA 2: MAGAZZINO -> Va allo scanner per CREARE LE ROTTE
+            else if (u === "magazzino" || u === "scanner rotte" || u === "crea rotte") {
+                window.location.href = "crea-rotte.html"; // <-- Inserisci qui il nome esatto della tua pagina!
+            }
+            // REGOLA 3: ADDETTI RITIRI -> Vanno al lettore di codici a barre per i pick-up
+            else if (u === "pick-up" || u === "pick up") {
                 window.location.href = "scanner-ritiri.html";
             } 
-            // REGOLA 3: TUTTI GLI ALTRI (Autisti con Nome e Cognome) -> Vanno al Navigatore
+            // REGOLA 4: TUTTI GLI ALTRI (Autisti) -> Vanno al Navigatore (RAR Corrieri)
             else {
                 window.location.href = "navigatore.html";
             }
-
-            //regola 4 scannerizza pacchi
-             if (u === "RAR" || u === "RAR") {
-                window.location.href = "scannerizza-pacchi.html";
-            } 
         }
     </script>
 </body>
