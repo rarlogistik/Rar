@@ -3,46 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Accesso</title>
+    <title>RAR Logistik - Accesso Sistema</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         body { background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
         .login-box { background: #1e293b; padding: 2.5rem; border-radius: 16px; border: 1px solid #334155; width: 100%; max-width: 350px; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.5); }
-        h1 { font-weight: 800; font-size: 2rem; margin-bottom: 2rem; }
+        h1 { font-weight: 800; font-size: 2.2rem; margin-bottom: 2rem; }
         h1 span { color: #f97316; }
-        input { width: 100%; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 1rem; box-sizing: border-box; }
-        button { width: 100%; padding: 1rem; background: #f97316; color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; }
+        input { width: 100%; padding: 1.1rem; margin-bottom: 1.2rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 1rem; box-sizing: border-box; }
+        input:focus { outline: none; border-color: #f97316; }
+        button { width: 100%; padding: 1.1rem; background: #f97316; color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; transition: background 0.3s; }
         button:hover { background: #ea580c; }
+        .error-msg { color: #ef4444; font-size: 0.9rem; margin-top: 1rem; display: none; font-weight: 700; }
     </style>
 </head>
 <body>
 
     <div class="login-box">
         <h1>RAR<span>Logistik</span></h1>
-        <input type="text" id="user" placeholder="Username (es. PICK-UP)">
+        <input type="text" id="user" placeholder="Inserisci Username">
         <input type="password" id="pass" placeholder="Password">
         <button onclick="eseguiLogin()">Accedi al Sistema</button>
+        <div id="errorMsg" class="error-msg">Inserisci Username e Password validi!</div>
     </div>
-<script>
+
+    <script>
         function eseguiLogin() {
-            // Trasforma tutto in minuscolo per evitare errori di battitura
+            // Prende i dati, toglie gli spazi vuoti accidentali e trasforma tutto in minuscolo
             let u = document.getElementById('user').value.trim().toLowerCase();
             let p = document.getElementById('pass').value.trim();
+            let errorBox = document.getElementById('errorMsg');
 
+            // Controllo campi vuoti
             if (u === "" || p === "") {
-                alert("Inserisci username e password!");
+                errorBox.style.display = "block";
                 return;
             }
+            errorBox.style.display = "none";
 
-            // CONTROLLO ACCOUNT: Dashboard Manager / Admin
+            // REGOLA 1: MANAGER / ADMIN -> Va alla Dashboard
             if (u === "admin" || u === "manager") {
                 window.location.href = "dashboard.html";
             } 
-            // CONTROLLO ACCOUNT: Addetti allo scanner (Pick-Up / RAR Scanner)
-            else if (u === "pick-up" || u === "pick up" || u === "rar scanner") {
+            // REGOLA 2: ADDETTI SCANNER -> Vanno al lettore di codici a barre
+            else if (u === "pick-up" || u === "pick up" || u === "scanner") {
                 window.location.href = "scanner-ritiri.html";
             } 
-            // SE NON È NESSUNO DEI PRECEDENTI, ALLORA È UN AUTISTA
+            // REGOLA 3: TUTTI GLI ALTRI (Autisti con Nome e Cognome) -> Vanno al Navigatore
             else {
                 window.location.href = "navigatore.html";
             }
