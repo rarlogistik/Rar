@@ -3,312 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Dashboard Amministrazione</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>RAR Logistik - Manager Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        .admin-container { max-width: 700px; margin: 2rem auto; padding: 1rem; }
-        .welcome-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; border-radius: 16px; padding: 2rem 1.5rem; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        :root { --bg: #0f172a; --card: #1e293b; --orange: #f97316; --text: #f8fafc; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 2rem; margin: 0; }
+        h1 { color: var(--orange); margin-bottom: 2rem; font-weight: 800; border-bottom: 2px solid #334155; padding-bottom: 1rem; }
+        h2 { margin-top: 3rem; color: #94a3b8; font-size: 1.2rem; text-transform: uppercase; }
         
-        .section-title { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+        .card { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; }
+        .card h3 { margin: 0 0 1rem 0; color: var(--text); }
+        .card p { margin: 0.5rem 0; color: #cbd5e1; font-size: 0.9rem; }
+        .highlight { color: var(--orange); font-weight: 700; }
         
-        /* Pannelli Generici */
-        .admin-card { background: var(--white); border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
-        .driver-row { margin-bottom: 1.25rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem; }
-        .driver-row:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-        .driver-info { display: flex; justify-content: space-between; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.25rem; }
-        
-        /* Barre di Progresso */
-        .bar-container { background-color: #e2e8f0; border-radius: 10px; height: 12px; width: 100%; overflow: hidden; margin-bottom: 0.5rem; }
-        .bar-fill { height: 100%; background-color: var(--accent); width: 0%; transition: width 0.5s ease-in-out; }
-        .bar-fill-red { height: 100%; background-color: #ef4444; width: 0%; transition: width 0.5s ease-in-out; }
-        
-        /* Bottone Aggiungi Reclamo */
-        .btn-add-complaint { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; gap: 0.25rem; }
-        .btn-add-complaint:hover { background: #fca5a5; }
-
-        /* Sezione Foto Filtro */
-        .filter-group { margin-bottom: 1.5rem; }
-        .filter-group select { width: 100%; padding: 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; font-family: var(--font); font-weight: 600; background-color: #f8fafc; color: var(--primary); cursor: pointer; }
-        
-        .admin-gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-        @media (max-width: 480px) { .admin-gallery-grid { grid-template-columns: 1fr; } }
-        .gallery-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
-        .gallery-item img { width: 100%; height: 160px; object-fit: cover; display: block; }
-        .gallery-info { padding: 0.75rem; font-size: 0.8rem; }
-        
-        /* Bottone Rotte */
-        .routes-section { text-align: center; margin-bottom: 2rem; }
-        .btn-routes { display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1.1rem; background-color: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3); transition: background-color 0.2s; }
-        .btn-routes:hover { background-color: #2563eb; }
-        
-        .no-data { text-align: center; color: var(--text-light); padding: 2rem 0; font-size: 0.95rem; }
+        .btn-view { background: #3b82f6; border: none; color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; margin-top: 1rem; width: 100%; font-weight: 600; }
+        .details-box { display: none; background: #0f172a; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px dashed #334155; }
+        .details-box img { max-width: 100%; border-radius: 6px; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
 
-    <header class="navbar">
-        <a href="index.html" class="logo">RAR <span>Logistik Exzellenz</span></a>
-        <button onclick="toggleSidebar()" class="menu-toggle">☰</button>
-    </header>
+    <h1>RAR LOGISTIK HUB</h1>
 
-    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <h2>Rotte Attive</h2>
+    <div class="grid" id="rotteAttive">Caricamento...</div>
 
-    <nav id="sidebar" class="sidebar">
-        <button onclick="toggleSidebar()" class="sidebar-close">✕</button>
-        <div class="sidebar-menu-links">
-            <a href="dashboard-admin.html" class="sidebar-link active-highlight">📊 Dashboard Admin</a>
-            <hr style="border:0; height:1px; background:rgba(255,255,255,0.1); margin:1rem 0;">
-            <button onclick="logoutToLanding()" class="sidebar-link logout-btn" style="background:none; border: 1px solid #f87171; text-align:left; width:100%; cursor:pointer; font-family:inherit;">🚪 Esci</button>
-        </div>
-    </nav>
+    <h2>Spedizioni Effettuate (Storico)</h2>
+    <div class="grid" id="storicoSpedizioni">Caricamento...</div>
 
-    <main class="admin-container">
-        
-        <div class="welcome-card">
-            <span style="color: var(--accent); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Pannello Amministrazione</span>
-            <h1 style="font-size: 1.8rem; margin-top: 0.25rem;">Benvenuto, Amministratore</h1>
-            <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 0.5rem;">Gestione dipendenti, tracciamento stop e resoconti fotografici/reclami.</p>
-        </div>
+    <h2>Ritiri Scannerizzati (Pick-up)</h2>
+    <div class="grid" id="storicoRitiri">Caricamento...</div>
 
-        <!-- SPOSTATO: Sezione Bottone Controllo Rotte (Ora in cima) -->
-        <div class="routes-section">
-            <button onclick="checkEmployeeRoutes()" class="btn-routes">
-                🗺️ Controlla le rotte dei dipendenti
-            </button>
-        </div>
-
-        <!-- Sezione 1: Progressi Mensili Driver -->
-        <div class="section-title">📊 Progressi Mensili Driver (Target: 3000)</div>
-        <div class="admin-card">
-            <div class="driver-row">
-                <div class="driver-info">
-                    <span>Sorin Turcanu</span>
-                    <span id="stops-Sorin">0 / 3000 Stop</span>
-                </div>
-                <div class="bar-container">
-                    <div id="bar-Sorin" class="bar-fill"></div>
-                </div>
-            </div>
-
-            <div class="driver-row">
-                <div class="driver-info">
-                    <span>Octavio Turcanu</span>
-                    <span id="stops-Octavio">0 / 3000 Stop</span>
-                </div>
-                <div class="bar-container">
-                    <div id="bar-Octavio" class="bar-fill"></div>
-                </div>
-            </div>
-
-            <div class="driver-row">
-                <div class="driver-info">
-                    <span>Robert Dragu</span>
-                    <span id="stops-Robert">0 / 3000 Stop</span>
-                </div>
-                <div class="bar-container">
-                    <div id="bar-Robert" class="bar-fill"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- NUOVA SEZIONE: Monitoraggio Reclami (Performance) -->
-        <div class="section-title">⚠️ Monitoraggio Reclami (Max: 5)</div>
-        <div class="admin-card">
-            <!-- Reclami Sorin -->
-            <div class="driver-row">
-                <div class="driver-info">
-                    <span>Sorin Turcanu</span>
-                    <span id="complaints-text-Sorin" style="color: #ef4444;">0 / 5 Reclami</span>
-                </div>
-                <div class="bar-container">
-                    <div id="complaints-bar-Sorin" class="bar-fill-red"></div>
-                </div>
-                <button class="btn-add-complaint" onclick="triggerAddComplaint('Sorin Turcanu')">🚨 Assegna Reclamo</button>
-            </div>
-
-            <!-- Reclami Octavio -->
-            <div class="driver-row">
-                <div class="driver-info">
-                    <span>Octavio Turcanu</span>
-                    <span id="complaints-text-Octavio" style="color: #ef4444;">0 / 5 Reclami</span>
-                </div>
-                <div class="bar-container">
-                    <div id="complaints-bar-Octavio" class="bar-fill-red"></div>
-                </div>
-                <button class="btn-add-complaint" onclick="triggerAddComplaint('Octavio Turcanu')">🚨 Assegna Reclamo</button>
-            </div>
-
-            <!-- Reclami Robert -->
-            <div class="driver-row">
-                <div class="driver-info">
-                    <span>Robert Dragu</span>
-                    <span id="complaints-text-Robert" style="color: #ef4444;">0 / 5 Reclami</span>
-                </div>
-                <div class="bar-container">
-                    <div id="complaints-bar-Robert" class="bar-fill-red"></div>
-                </div>
-                <button class="btn-add-complaint" onclick="triggerAddComplaint('Robert Dragu')">🚨 Assegna Reclamo</button>
-            </div>
-        </div>
-
-        <!-- Input File nascosto per l'acquisizione foto del reclamo -->
-        <input type="file" id="complaintPhotoInput" class="hidden" accept="image/*" onchange="handleComplaintUpload(event)">
-
-        <!-- Sezione 3: Visualizzatore Foto Personalizzato -->
-        <div class="section-title">📸 Archivio Foto e Resoconti</div>
-        <div class="admin-card">
-            <div class="filter-group">
-                <label style="display:block; font-size:0.9rem; font-weight:600; margin-bottom:0.5rem; color:var(--text-light)">Filtra per Driver:</label>
-                <select id="driverPhotoFilter" onchange="loadDriverPhotos(this.value)">
-                    <option value="Sorin Turcanu">Visualizza foto di Sorin Turcanu</option>
-                    <option value="Octavio Turcanu">Visualizza foto di Octavio Turcanu</option>
-                    <option value="Robert Dragu">Visualizza foto di Robert Dragu</option>
-                </select>
-            </div>
-            <div id="adminGalleryGrid" class="admin-gallery-grid"></div>
-        </div>
-
-    </main>
-
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <script>
-        let currentTargetDriver = "";
+        const firebaseConfig = {  
+            apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",  
+            authDomain: "rar-logistik-7663d.firebaseapp.com",   
+            projectId: "rar-logistik-7663d",    
+            storageBucket: "rar-logistik-7663d.firebasestorage.app",    
+            messagingSenderId: "657384053565",  
+            appId: "1:657384053565:web:fc1e812a80553f1eb08354"  
+        };    
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebarOverlay').classList.toggle('show');
-        }
-
-        function logoutToLanding() {
-            localStorage.removeItem('rar_active_user');
-            window.location.href = "index.html";
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const currentUser = localStorage.getItem('rar_active_user');
-            if (currentUser !== "Rar Logistik") {
-                window.location.href = "login.html";
-                return;
-            }
-            updateAllData();
-            loadDriverPhotos("Sorin Turcanu");
+        // 1. ROTTE ATTIVE
+        db.collection("Rotte").onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                let data = doc.data();
+                let tappe = data.tappe || [];
+                let tappeRimaste = tappe.filter(t => !t.consegnato);
+                
+                if(tappeRimaste.length > 0) {
+                    let ultIndirizzo = tappeRimaste[0].address;
+                    let numRimaste = tappeRimaste.length;
+                    
+                    let dataStima = new Date();
+                    dataStima.setMinutes(dataStima.getMinutes() + (numRimaste * 12));
+                    
+                    html += `<div class="card">
+                        <h3>Rotta <span class="highlight">#${doc.id}</span></h3>
+                        <p>Account: ${data.account || 'Generico'}</p>
+                        <p>Ultimo indirizzo gestito: <b>${ultIndirizzo}</b></p>
+                        <p>Stop mancanti: <b>${numRimaste}</b></p>
+                        <p>ETA Fine Turno: <span class="highlight">${dataStima.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}</span></p>
+                    </div>`;
+                }
+            });
+            document.getElementById('rotteAttive').innerHTML = html || "<p>Nessuna rotta attiva.</p>";
         });
 
-        function updateAllData() {
-            const drivers = ["Sorin Turcanu", "Octavio Turcanu", "Robert Dragu"];
-            const maxStops = 3000;
-            const maxComplaints = 5;
-
-            drivers.forEach(driver => {
-                const cleanName = driver.split(' ')[0];
-
-                // 1. Carica Stop
-                const STOPS_KEY = "rar_total_stops_" + driver;
-                const totalStops = parseInt(localStorage.getItem(STOPS_KEY)) || 0;
-                const stopsText = document.getElementById(`stops-${cleanName}`);
-                if (stopsText) stopsText.innerText = `${totalStops} / ${maxStops} Stop`;
+        // 2. SPEDIZIONI EFFETTUATE
+        db.collection("SpedizioniEffettuate").orderBy("dataConsegna", "desc").limit(20).onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                let d = doc.data();
+                let dateObj = new Date(d.dataConsegna);
+                let coords = d.coordinateArrivo ? `${d.coordinateArrivo.lat.toFixed(5)}, ${d.coordinateArrivo.lng.toFixed(5)}` : "Sconosciute";
                 
-                const barFill = document.getElementById(`bar-${cleanName}`);
-                if (barFill) barFill.style.width = Math.min((totalStops / maxStops) * 100, 100) + '%';
+                let detailMedia = d.dettagliEsito.firma ? `<img src="${d.dettagliEsito.firma}">` : 
+                                 (d.dettagliEsito.fotoProva ? `<img src="${d.dettagliEsito.fotoProva}">` : "Nessun media allegato");
 
-                // 2. Carica Reclami
-                const COMPLAINTS_KEY = "rar_complaints_" + driver;
-                const totalComplaints = parseInt(localStorage.getItem(COMPLAINTS_KEY)) || 0;
-                const compText = document.getElementById(`complaints-text-${cleanName}`);
-                if (compText) compText.innerText = `${totalComplaints} / ${maxComplaints} Reclami`;
-
-                const compBar = document.getElementById(`complaints-bar-${cleanName}`);
-                if (compBar) compBar.style.width = Math.min((totalComplaints / maxComplaints) * 100, 100) + '%';
-            });
-        }
-
-        // Gestione inserimento Reclami
-        function triggerAddComplaint(driverName) {
-            currentTargetDriver = driverName;
-            document.getElementById('complaintPhotoInput').click();
-        }
-
-        function handleComplaintUpload(event) {
-            const file = event.target.files[0];
-            if (file && currentTargetDriver !== "") {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = function (e) {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = function () {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 400;
-                        const scale = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scale;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        const compressedData = canvas.toDataURL('image/jpeg', 0.7);
-
-                        // Salva nel registro del dipendente
-                        const COMPLAINTS_KEY = "rar_complaints_" + currentTargetDriver;
-                        const GALLERY_KEY = "rar_gallery_" + currentTargetDriver;
-
-                        let currentComplaints = parseInt(localStorage.getItem(COMPLAINTS_KEY)) || 0;
-                        localStorage.setItem(COMPLAINTS_KEY, currentComplaints + 1);
-
-                        let galleria = JSON.parse(localStorage.getItem(GALLERY_KEY)) || [];
-                        galleria.push({
-                            image: compressedData,
-                            date: new Date().toLocaleDateString('it-IT'),
-                            stops: 0,
-                            type: "🚨 RECLAMO (Notificato dall'Admin)"
-                        });
-                        localStorage.setItem(GALLERY_KEY, JSON.stringify(galleria));
-
-                        alert(`Reclamo registrato correttamente per ${currentTargetDriver}.`);
-                        updateAllData();
-                        loadDriverPhotos(document.getElementById('driverPhotoFilter').value);
-                    };
-                };
-            }
-            event.target.value = ""; // Resetta input
-        }
-
-        function loadDriverPhotos(driverName) {
-            const grid = document.getElementById('adminGalleryGrid');
-            grid.innerHTML = "";
-
-            const GALLERY_KEY = "rar_gallery_" + driverName;
-            const photos = JSON.parse(localStorage.getItem(GALLERY_KEY)) || [];
-
-            if (photos.length === 0) {
-                grid.innerHTML = `<div class="no-data" style="grid-column: span 2;">Nessun resoconto o reclamo salvato.</div>`;
-                return;
-            }
-
-            photos.slice().reverse().forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'gallery-item';
-
-                let BadgeColor = "#0f172a";
-                if(item.type && item.type.includes("RETOUR")) BadgeColor = "#ef4444";
-                if(item.type && item.type.includes("Consegnato")) BadgeColor = "#22c55e";
-                if(item.type && item.type.includes("RECLAMO")) BadgeColor = "#b91c1c";
-
-                card.innerHTML = `
-                    <img src="${item.image}">
-                    <div class="gallery-info">
-                        <div style="font-weight:700;">📅 ${item.date}</div>
-                        <div style="background:${BadgeColor}; color:white; display:inline-block; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.7rem; margin-top:0.3rem; font-weight:bold;">
-                            ${item.type || 'Inizio Turno'}
-                        </div>
+                html += `<div class="card">
+                    <p style="font-size:0.8rem; color:#94a3b8;">${dateObj.toLocaleString('it-IT')}</p>
+                    <h3 style="font-size:1rem;">${d.indirizzo}</h3>
+                    <button class="btn-view" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">Vedi Dettagli</button>
+                    <div class="details-box">
+                        <p><b>Coordinate:</b> <a href="https://maps.google.com/?q=${coords}" target="_blank" style="color:#4ade80;">${coords}</a></p>
+                        <p><b>Colli:</b> ${d.colli}</p>
+                        <p><b>Esito:</b> ${d.dettagliEsito.esito} ${d.dettagliEsito.persona ? '('+d.dettagliEsito.persona+')' : ''}</p>
+                        ${detailMedia}
                     </div>
-                `;
-                grid.appendChild(card);
+                </div>`;
             });
-        }
+            document.getElementById('storicoSpedizioni').innerHTML = html || "<p>Nessuna spedizione registrata.</p>";
+        });
 
-        function checkEmployeeRoutes() {
-            window.open("https://www.google.com/maps", "_blank");
-        }
+        // 3. RITIRI SCANNERIZZATI
+        db.collection("Ritiri").orderBy("orario", "desc").limit(20).onSnapshot(snap => {
+            let html = "";
+            snap.forEach(doc => {
+                let d = doc.data();
+                let time = d.orario ? new Date(d.orario.toDate()).toLocaleString('it-IT') : '--';
+                html += `<div class="card">
+                    <p style="font-size:0.8rem; color:#94a3b8;">Scansione: ${time}</p>
+                    <h3>Codice: <span class="highlight">${d.etichetta}</span></h3>
+                </div>`;
+            });
+            document.getElementById('storicoRitiri').innerHTML = html || "<p>Nessun ritiro scannerizzato.</p>";
+        });
     </script>
 </body>
 </html>
