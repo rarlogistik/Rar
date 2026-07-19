@@ -9,7 +9,7 @@
         :root { --bg: #0f172a; --card: #1e293b; --orange: #f97316; --text: #f8fafc; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 2rem; margin: 0; }
         h1 { color: var(--orange); margin-bottom: 2rem; font-weight: 800; border-bottom: 2px solid #334155; padding-bottom: 1rem; }
-        h2 { margin-top: 3rem; color: #94a3b8; font-size: 1.2rem; text-transform: uppercase; }
+        h2 { margin-top: 2rem; color: #94a3b8; font-size: 1.2rem; text-transform: uppercase; }
         
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
         .card { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; }
@@ -20,6 +20,13 @@
         .btn-view { background: #3b82f6; border: none; color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; margin-top: 1rem; width: 100%; font-weight: 600; }
         .details-box { display: none; background: #0f172a; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px dashed #334155; }
         .details-box img { max-width: 100%; border-radius: 6px; margin-top: 0.5rem; }
+        
+        /* Stile per il menu a tendina dello storico */
+        details { background: var(--card); padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid #334155; margin-top: 3rem; }
+        summary { font-size: 1.2rem; font-weight: 800; color: #94a3b8; cursor: pointer; text-transform: uppercase; list-style: none; display: flex; align-items: center; }
+        summary::-webkit-details-marker { display: none; }
+        summary::before { content: "▶"; margin-right: 10px; color: var(--orange); transition: transform 0.2s; }
+        details[open] summary::before { transform: rotate(90deg); }
     </style>
 </head>
 <body>
@@ -29,7 +36,13 @@
     <h2>Rotte Attive</h2>
     <div class="grid" id="rotteAttive">Caricamento...</div>
 
-    <h2>Spedizioni Effettuate (Storico)</h2>
+    <!-- MENU A TENDINA PER LO STORICO ROTTE -->
+    <details>
+        <summary>Storico Rotte Completate</summary>
+        <div class="grid" id="storicoRotte" style="margin-top: 1.5rem;">Nessuna rotta completata.</div>
+    </details>
+
+    <h2>Spedizioni Effettuate (Dettaglio)</h2>
     <div class="grid" id="storicoSpedizioni">Caricamento...</div>
 
     <h2>Ritiri Scannerizzati (Pick-up)</h2>
@@ -49,13 +62,16 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // 1. ROTTE ATTIVE
+        // 1. ROTTE ATTIVE E STORICO ROTTE
         db.collection("Rotte").onSnapshot(snap => {
-            let html = "";
+            let htmlAttive = "";
+            let htmlStorico = "";
+            
             snap.forEach(doc => {
                 let data = doc.data();
                 let tappe = data.tappe || [];
                 let tappeRimaste = tappe.filter(t => !t.consegnato);
+                let autistaAssegnato = data.autista || 'In attesa di autista...';
                 
                 if(tappeRimaste.length > 0) {
                     let ultIndirizzo = tappeRimaste[0].address;
@@ -64,20 +80,27 @@
                     let dataStima = new Date();
                     dataStima.setMinutes(dataStima.getMinutes() + (numRimaste * 12));
                     
-                    html += `<div class="card">
+                    htmlAttive += `<div class="card">
                         <h3>Rotta <span class="highlight">#${doc.id}</span></h3>
-                        <p>Account: ${data.account || 'Generico'}</p>
-                        <p>Ultimo indirizzo gestito: <b>${ultIndirizzo}</b></p>
+                        <p>Autista: <b style="color:white;">${autistaAssegnato}</b></p>
+                        <p>Prossimo Stop: <b>${ultIndirizzo}</b></p>
                         <p>Stop mancanti: <b>${numRimaste}</b></p>
                         <p>ETA Fine Turno: <span class="highlight">${dataStima.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}</span></p>
                     </div>`;
+                } else {
+                    htmlStorico += `<div class="card" style="opacity: 0.8;">
+                        <h3>Rotta <span class="highlight">#${doc.id}</span></h3>
+                        <p>Autista: <b style="color:white;">${autistaAssegnato}</b></p>
+                        <p style="color: #4ade80; font-weight: bold;">✔ Completata</p>
+                    </div>`;
                 }
             });
-            document.getElementById('rotteAttive').innerHTML = html || "<p>Nessuna rotta attiva.</p>";
+            document.getElementById('rotteAttive').innerHTML = htmlAttive || "<p>Nessuna rotta attiva.</p>";
+            document.getElementById('storicoRotte').innerHTML = htmlStorico || "<p>Nessuna rotta completata.</p>";
         });
 
         // 2. SPEDIZIONI EFFETTUATE
-        db.collection("SpedizioniEffettuate").orderBy("dataConsegna", "desc").limit(20).onSnapshot(snap => {
+        db.collection("SpedizioniEffettuate").orderBy("dataConsegna", "desc").limit(30).onSnapshot(snap => {
             let html = "";
             snap.forEach(doc => {
                 let d = doc.data();
@@ -88,7 +111,7 @@
                                  (d.dettagliEsito.fotoProva ? `<img src="${d.dettagliEsito.fotoProva}">` : "Nessun media allegato");
 
                 html += `<div class="card">
-                    <p style="font-size:0.8rem; color:#94a3b8;">${dateObj.toLocaleString('it-IT')}</p>
+                    <p style="font-size:0.8rem; color:#94a3b8;">${dateObj.toLocaleString('it-IT')} | Rotta #${d.idRotta}</p>
                     <h3 style="font-size:1rem;">${d.indirizzo}</h3>
                     <button class="btn-view" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">Vedi Dettagli</button>
                     <div class="details-box">
