@@ -32,6 +32,8 @@
             // Prende i dati, toglie gli spazi vuoti accidentali e trasforma tutto in minuscolo
             let u = document.getElementById('user').value.trim().toLowerCase();
             let p = document.getElementById('pass').value.trim();
+            // Aggiungi questa riga subito dopo aver preso i valori di u e p:
+localStorage.setItem('RAR_User', u.toUpperCase());
             let errorBox = document.getElementById('errorMsg');
 
             // Controllo campi vuoti
