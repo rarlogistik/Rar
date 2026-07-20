@@ -4,19 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RAR Logistik - Portale Clienti & Spedizioni</title>
-    <!-- Librerie esterne -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <link rel="stylesheet" href="style.css">
     <style>
         :root { --primary: #0f172a; --accent: #f97316; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
         .portal-container { max-width: 600px; margin: 2rem auto; padding: 1rem; }
-        .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+        .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; }
         .input-group { margin-bottom: 1rem; }
-        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; }
-        .label-template { background: white; border: 3px solid #000; padding: 1.5rem; width: 100%; max-width: 380px; margin: 2rem auto; display: none; color: black; }
-        .btn-action { background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
+        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        .btn-action { background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+        .label-template { background: white; border: 3px solid #000; padding: 1.5rem; width: 100%; max-width: 380px; margin: 2rem auto; display: none; text-align: center; }
     </style>
 </head>
 <body>
@@ -24,19 +23,18 @@
     <main class="portal-container">
         <h1>Crea Nuova Spedizione</h1>
         <div class="form-card" id="formSpedizione">
-            <input type="text" id="destName" class="input-field" placeholder="Destinatario">
-            <input type="number" id="peso" class="input-field" placeholder="Peso (kg)">
-            <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)">
-            <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo">
-            <input type="text" id="destCap" class="input-field" placeholder="CAP">
-            <input type="text" id="destCity" class="input-field" placeholder="Città">
+            <input type="text" id="destName" class="input-field" placeholder="Destinatario" style="margin-bottom:10px;">
+            <input type="number" id="peso" class="input-field" placeholder="Peso (kg)" style="margin-bottom:10px;">
+            <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)" style="margin-bottom:10px;">
+            <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo" style="margin-bottom:10px;">
+            <input type="text" id="destCap" class="input-field" placeholder="CAP" style="margin-bottom:10px;">
+            <input type="text" id="destCity" class="input-field" placeholder="Città" style="margin-bottom:10px;">
             <button id="btnGenera" class="btn-action">Genera Spedizione ed Etichetta ⚡</button>
         </div>
 
         <div class="label-template" id="logisticLabel">
             <h2>RAR LOGISTIK</h2>
-            <div id="lblData"></div>
-            <div id="qrcode"></div>
+            <div id="qrcode" style="display:flex; justify-content:center; margin: 10px 0;"></div>
             <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & Invia Email 📧</button>
         </div>
     </main>
@@ -45,28 +43,24 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
-        // Configurazione Firebase
-       // Invece di usare la variabile, inseriamo i dati direttamente qui dentro
-const app = initializeApp({
-    apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",
-    authDomain: "rar-logistik-7663d.firebaseapp.com",
-    projectId: "rar-logistik-7663d",
-    storageBucket: "rar-logistik-7663d.firebasestorage.app",
-    messagingSenderId: "657384053565",
-    appId: "1:657384053565:web:fc1e812a80553f1eb08354"
-});
+        const app = initializeApp({
+            apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",
+            authDomain: "rar-logistik-7663d.firebaseapp.com",
+            projectId: "rar-logistik-7663d",
+            storageBucket: "rar-logistik-7663d.firebasestorage.app",
+            messagingSenderId: "657384053565",
+            appId: "1:657384053565:web:fc1e812a80553f1eb08354"
+        });
 
-const db = getFirestore(app);
+        const db = getFirestore(app);
+        emailjs.init("TUO_USER_ID");
 
-        console.log("Configurazione caricata:", firebaseConfig.projectId); // DEBUG: se vedi questo in console, abbiamo vinto!
         async function creaSpedizione() {
             const data = {
                 destinatario: document.getElementById('destName').value,
                 peso: document.getElementById('peso').value,
                 misure: document.getElementById('misure').value
             };
-
-            // Salvataggio su Firebase
             const docRef = await addDoc(collection(db, "Spedizioni"), data);
             
             document.getElementById('formSpedizione').style.display = 'none';
@@ -74,32 +68,23 @@ const db = getFirestore(app);
             new QRCode(document.getElementById("qrcode"), docRef.id);
         }
 
-      async function processaEtichetta() {
-    const element = document.getElementById('logisticLabel');
-    element.style.display = 'block';
+        async function processaEtichetta() {
+            const element = document.getElementById('logisticLabel');
+            const canvas = await html2canvas(element);
+            const link = document.createElement('a');
+            link.download = 'etichetta.png';
+            link.href = canvas.toDataURL();
+            link.click();
 
-    // 1. FORZIAMO IL DOWNLOAD SUBITO
-    // Usiamo html2canvas ma senza troppe attese
-    html2canvas(element).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'etichetta_RAR.png';
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-    });
+            await emailjs.send("service_ID", "template_ID", {
+                destinatario: document.getElementById('destName').value,
+                to_email: "rarlogistik@gmail.com"
+            });
+            alert("Operazione completata!");
+        }
 
-    // 2. INVIO EMAIL (Separato)
-    try {
-        await emailjs.send("service_ID", "template_ID", {
-            destinatario: document.getElementById('destName').value,
-            peso: document.getElementById('peso').value,
-            misure: document.getElementById('misure').value,
-            to_email: "rarlogistik@gmail.com"
-        });
-        alert("Email inviata!");
-    } catch (error) {
-        console.error("Errore Email:", error);
-    }
-}
+        document.getElementById('btnGenera').addEventListener('click', creaSpedizione);
+        document.getElementById('btnDownload').addEventListener('click', processaEtichetta);
     </script>
 </body>
 </html>
