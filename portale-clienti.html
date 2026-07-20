@@ -46,14 +46,19 @@
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
         // Configurazione Firebase
-        const firebaseConfig = {  
-    apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",  
-    authDomain: "rar-logistik-7663d.firebaseapp.com",   
-    projectId: "rar-logistik-7663d", // <-- Assicurati che questo sia scritto bene!
-    storageBucket: "rar-logistik-7663d.firebasestorage.app",    
-    messagingSenderId: "657384053565",  
-    appId: "1:657384053565:web:fc1e812a80553f1eb08354"  
-};
+       // Invece di usare la variabile, inseriamo i dati direttamente qui dentro
+const app = initializeApp({
+    apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",
+    authDomain: "rar-logistik-7663d.firebaseapp.com",
+    projectId: "rar-logistik-7663d",
+    storageBucket: "rar-logistik-7663d.firebasestorage.app",
+    messagingSenderId: "657384053565",
+    appId: "1:657384053565:web:fc1e812a80553f1eb08354"
+});
+
+const db = getFirestore(app);
+
+        console.log("Configurazione caricata:", firebaseConfig.projectId); // DEBUG: se vedi questo in console, abbiamo vinto!
         async function creaSpedizione() {
             const data = {
                 destinatario: document.getElementById('destName').value,
