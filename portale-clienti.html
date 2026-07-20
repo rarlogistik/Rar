@@ -32,11 +32,18 @@
             <button id="btnGenera" class="btn-action">Genera Spedizione ed Etichetta ⚡</button>
         </div>
 
-        <div class="label-template" id="logisticLabel">
-            <h2>RAR LOGISTIK</h2>
-            <div id="qrcode" style="display:flex; justify-content:center; margin: 10px 0;"></div>
-            <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & Invia Email 📧</button>
-        </div>
+       <div class="label-template" id="logisticLabel">
+    <div style="border-bottom: 2px solid #000; margin-bottom: 10px;">
+        <h2 style="margin: 0;">RAR LOGISTIK</h2>
+    </div>
+    <div style="text-align: left; font-size: 0.9rem;">
+        <p><strong>Destinatario:</strong> <span id="lblDest"></span></p>
+        <p><strong>Peso:</strong> <span id="lblPeso"></span> kg</p>
+        <p><strong>Misure:</strong> <span id="lblMisure"></span> cm</p>
+    </div>
+    <div id="qrcode" style="display:flex; justify-content:center; margin: 15px 0;"></div>
+    <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & Invia Email 📧</button>
+</div>
     </main>
 
     <script type="module">
@@ -55,18 +62,29 @@
         const db = getFirestore(app);
         emailjs.init("TUO_USER_ID");
 
-        async function creaSpedizione() {
-            const data = {
-                destinatario: document.getElementById('destName').value,
-                peso: document.getElementById('peso').value,
-                misure: document.getElementById('misure').value
-            };
-            const docRef = await addDoc(collection(db, "Spedizioni"), data);
-            
-            document.getElementById('formSpedizione').style.display = 'none';
-            document.getElementById('logisticLabel').style.display = 'block';
-            new QRCode(document.getElementById("qrcode"), docRef.id);
-        }
+       async function creaSpedizione() {
+    // 1. Prendi i valori
+    const dest = document.getElementById('destName').value;
+    const peso = document.getElementById('peso').value;
+    const misure = document.getElementById('misure').value;
+
+    // 2. Salva su Firebase
+    const docRef = await addDoc(collection(db, "Spedizioni"), {
+        destinatario: dest,
+        peso: peso,
+        misure: misure
+    });
+    
+    // 3. RIEMPI L'ETICHETTA (Questa è la parte nuova!)
+    document.getElementById('lblDest').innerText = dest;
+    document.getElementById('lblPeso').innerText = peso;
+    document.getElementById('lblMisure').innerText = misure;
+
+    // 4. Mostra e genera QR
+    document.getElementById('formSpedizione').style.display = 'none';
+    document.getElementById('logisticLabel').style.display = 'block';
+    new QRCode(document.getElementById("qrcode"), docRef.id);
+}
 
         async function processaEtichetta() {
             const element = document.getElementById('logisticLabel');
