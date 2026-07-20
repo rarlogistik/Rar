@@ -65,24 +65,32 @@
             new QRCode(document.getElementById("qrcode"), docRef.id);
         }
 
-        async function processaEtichetta() {
-            const element = document.getElementById('logisticLabel');
-            const canvas = await html2canvas(element);
-            const link = document.createElement('a');
-            link.download = 'etichetta.png';
-            link.href = canvas.toDataURL();
-            link.click();
+      async function processaEtichetta() {
+    const element = document.getElementById('logisticLabel');
+    element.style.display = 'block';
 
-            await emailjs.send("service_ID", "template_ID", {
-                destinatario: document.getElementById('destName').value,
-                to_email: "rarlogistik@gmail.com"
-            });
-            alert("Operazione completata!");
-        }
+    // 1. FORZIAMO IL DOWNLOAD SUBITO
+    // Usiamo html2canvas ma senza troppe attese
+    html2canvas(element).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'etichetta_RAR.png';
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
 
-        // Collegamento eventi (evita l'errore di funzione non trovata)
-        document.getElementById('btnGenera').addEventListener('click', creaSpedizione);
-        document.getElementById('btnDownload').addEventListener('click', processaEtichetta);
+    // 2. INVIO EMAIL (Separato)
+    try {
+        await emailjs.send("service_ID", "template_ID", {
+            destinatario: document.getElementById('destName').value,
+            peso: document.getElementById('peso').value,
+            misure: document.getElementById('misure').value,
+            to_email: "rarlogistik@gmail.com"
+        });
+        alert("Email inviata!");
+    } catch (error) {
+        console.error("Errore Email:", error);
+    }
+}
     </script>
 </body>
 </html>
