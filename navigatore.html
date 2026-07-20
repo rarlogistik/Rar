@@ -4,7 +4,7 @@
     <link rel=¨manifest¨ href=¨manifest.json¨>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Navigatore Live 3D</title>
+    <title>RAR Logistik - GPS Live 3D</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg-dark: #0f172a; --bg-card: #1e293b; --orange-rar: #f97316; --text-light: #f8fafc; --text-muted: #94a3b8; }
@@ -57,14 +57,14 @@
 </head>
 <body>
 
-    <div id="toastMessage" class="toast">Notifica</div>
+    <div id="toastMessage" class="toast">!</div>
 
     <div id="modalRotta" class="modal-overlay">
         <div class="modal-box">
-            <h3>Cerca Rotta</h3>
-            <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 1.5rem;">Inserisci il codice della rotta assegnata per iniziare il turno.</p>
+            <h3>Insert Route</h3>
+            <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 1.5rem;">Type your route number to begin.</p>
             <input type="text" id="inputCodiceRotta" class="input-text-premium" placeholder="Es. 101" style="text-align:center; font-size:1.2rem; font-weight:bold;">
-            <button onclick="confermaCaricamentoRotta()" class="btn-action btn-start-nav">Scarica dal Cloud</button>
+            <button onclick="confermaCaricamentoRotta()" class="btn-action btn-start-nav">Begin!</button>
         </div>
     </div>
 
@@ -77,12 +77,12 @@
         <div class="map-wrapper">
             <div id="google-map"></div>
             <!-- Pulsante rimesso al suo posto -->
-            <button id="btnRecenter" onclick="riattivaSeguiFurgone()">🎯 Ricaltra</button>
+            <button id="btnRecenter" onclick="riattivaSeguiFurgone()">🎯</button>
         </div>
 
         <div class="navigation-panel">
             <div class="address-box">
-                <span style="color: #f97316;" id="lblStatoTarget">Prossima Tappa:</span>
+                <span style="color: #f97316;" id="lblStatoTarget">Next stop:</span>
                 <span id="txtIndirizzoTarget">--</span>
             </div>
 
@@ -91,7 +91,7 @@
                     <div class="eta-box" id="txtPanETA">-- Min</div>
                     <div class="km-box" id="txtPanKm">-- km</div>
                 </div>
-                <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Avvia Navigazione</button>
+                <button onclick="avviaNavigazioneLive()" class="btn-action btn-start-nav">▶️ Start driving</button>
             </div>
 
             <div id="panelInViaggio" class="hidden">
@@ -101,47 +101,47 @@
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; font-weight: 700; margin-bottom: 1rem;">
-                    <span>🛑 STOP RIMANENTI: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
-                    <span>🕒 ETA FINE: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
+                    <span>🛑 Remaining stops: <span id="lblStopRimanenti" style="color:#f97316;">-</span></span>
+                    <span>🕒 ETA: <span id="lblETAEndTour" style="color:#f97316;">--:--</span></span>
                 </div>
                 
-                <button id="btnArrivato" onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked" disabled>🅿️ RICERCA POSIZIONE...</button>
+                <button id="btnArrivato" onclick="fermaArrivatoSulPosto()" class="btn-action btn-parked" disabled>🅿️ not at the address yet...</button>
             </div>
 
             <div id="panelArrivato" class="hidden">
                 <div class="pacco-details-card">
-                    <div class="pacco-label">👤 Destinatario</div>
+                    <div class="pacco-label">👤 Client</div>
                     <div class="pacco-value" id="txtNomeDestinatario">---</div>
-                    <div class="pacco-label">📦 Colli in Consegna</div>
+                    <div class="pacco-label">📦 Packages loaded</div>
                     <div class="pacco-value" id="txtNumeroColli" style="color:#f97316;">1</div>
 
                     <div id="boxSceltaEsito">
-                        <div class="pacco-label">Esito Chiusura:</div>
+                        <div class="pacco-label">Delivered:</div>
                         <div class="consegna-options-grid">
-                            <button onclick="selezionaEsito('mano')" class="option-btn">🤝 A Mani</button>
-                            <button onclick="selezionaEsito('sicuro')" class="option-btn">🔒 Posto Sicuro</button>
+                            <button onclick="selezionaEsito('mano')" class="option-btn">🤝 In hand</button>
+                            <button onclick="selezionaEsito('sicuro')" class="option-btn">🔒 Another safe location</button>
                         </div>
                     </div>
 
                     <div id="boxEsitoMano" class="hidden">
-                        <div class="pacco-label">Nome ricevente:</div>
-                        <input type="text" id="txtNomeRicevente" class="input-text-premium" placeholder="Es. Mario Rossi">
-                        <div class="pacco-label">Firma:</div>
+                        <div class="pacco-label">Client name:</div>
+                        <input type="text" id="txtNomeRicevente" class="input-text-premium" placeholder="...">
+                        <div class="pacco-label">signature:</div>
                         <canvas id="signature-canvas"></canvas>
-                        <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; cursor:pointer;">🧹 Cancella</button>
+                        <button onclick="pulisciFirma()" style="background:none; border:none; color:#f87171; cursor:pointer;">🧹 Erase</button>
                     </div>
 
                     <div id="boxEsitoSicuro" class="hidden">
-                        <div class="pacco-label">Foto Prova Consegna:</div>
+                        <div class="pacco-label">Proof of delivery:</div>
                         <label class="btn-action" style="background:#334155; margin-bottom:0.5rem;">
-                            📷 Scatta Foto
+                            📷 Take photo
                             <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="gestisciFoto(this)">
                         </label>
                         <div id="txtStatoFoto" style="font-size:0.8rem; color:#4ade80; text-align:center;"></div>
                     </div>
                 </div>
 
-                <button id="btnSalvaChiusura" onclick="concludiEInviaEsito()" class="btn-action btn-consegna hidden">💾 Salva nel Cloud</button>
+                <button id="btnSalvaChiusura" onclick="concludiEInviaEsito()" class="btn-action btn-consegna hidden">💾 Next</button>
             </div>
         </div>
     </div>
