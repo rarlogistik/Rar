@@ -3,90 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Generazione Etichette</title>
+    <title>RAR Logistik - Portale Clienti & Spedizioni</title>
+    <!-- Librerie esterne -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script> (function(){ emailjs.init("TUO_USER_ID_EMAILJS"); })(); </script>
+    <link rel="stylesheet" href="style.css">
     <style>
         :root { --primary: #0f172a; --accent: #f97316; }
-        body { background-color: var(--primary); color: white; font-family: 'Inter', sans-serif; display: flex; justify-content: center; padding: 20px; }
-        .form-card { background: #1e293b; padding: 2rem; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #334155; }
+        .portal-container { max-width: 600px; margin: 2rem auto; padding: 1rem; }
+        .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
         .input-group { margin-bottom: 1rem; }
-        .input-field { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 1rem; background: var(--accent); border: none; border-radius: 8px; font-weight: 800; color: white; cursor: pointer; }
-        .label-template { background: white; color: black; padding: 20px; width: 350px; display: none; margin: 20px auto; border: 2px solid #000; }
+        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .label-template { background: white; border: 3px solid #000; padding: 1.5rem; width: 100%; max-width: 380px; margin: 2rem auto; display: none; color: black; }
+        .btn-action { background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="form-card" id="formSpedizione">
-    <h1 style="color: var(--accent); text-align: center;">Genera Spedizione</h1>
-    <input type="text" id="destName" class="input-field" placeholder="Nome Destinatario">
-    <input type="number" id="peso" class="input-field" placeholder="Peso (kg)">
-    <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)">
-    <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo">
-    <input type="text" id="destCap" class="input-field" placeholder="CAP">
-    <input type="text" id="destCity" class="input-field" placeholder="Città">
-    <button onclick="window.creaSpedizioneCloud()">Genera Etichetta ⚡</button>
-</div>
+    <main class="portal-container">
+        <h1>Crea Nuova Spedizione</h1>
+        <div class="form-card" id="formSpedizione">
+            <input type="text" id="destName" class="input-field" placeholder="Destinatario">
+            <input type="number" id="peso" class="input-field" placeholder="Peso (kg)">
+            <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)">
+            <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo">
+            <input type="text" id="destCap" class="input-field" placeholder="CAP">
+            <input type="text" id="destCity" class="input-field" placeholder="Città">
+            <button id="btnGenera" class="btn-action">Genera Spedizione ed Etichetta ⚡</button>
+        </div>
 
-<div class="label-template" id="logisticLabel">
-    <h2>RAR LOGISTIK</h2>
-    <div id="lblData"></div>
-    <div id="qrcode"></div>
-    <button onclick="processaEtichetta()">Download & Invia Email 📧</button>
-</div>
+        <div class="label-template" id="logisticLabel">
+            <h2>RAR LOGISTIK</h2>
+            <div id="lblData"></div>
+            <div id="qrcode"></div>
+            <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & Invia Email 📧</button>
+        </div>
+    </main>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
-    const firebaseConfig = { /* Le tue chiavi */ };
-    const db = getFirestore(initializeApp(firebaseConfig));
+        // Configurazione Firebase
+        const firebaseConfig = { /* Le tue chiavi qui */ };
+        const db = getFirestore(initializeApp(firebaseConfig));
+        emailjs.init("TUO_USER_ID");
 
-    window.creaSpedizioneCloud = async function() {
-        // ... (Logica esistente di salvataggio Firebase)
-        document.getElementById('formSpedizione').style.display = 'none';
-        document.getElementById('logisticLabel').style.display = 'block';
-    };
-window.processaEtichetta = async function() {
-    const element = document.getElementById('logisticLabel');
-    
-    // Rimuoviamo il "display: none" forzato per assicurarci che sia visibile per la cattura
-    element.style.display = 'block'; 
-    
-    try {
-        const canvas = await html2canvas(element, {
-            scale: 2, // Aumenta la qualità
-            useCORS: true
-        });
+        async function creaSpedizione() {
+            const data = {
+                destinatario: document.getElementById('destName').value,
+                peso: document.getElementById('peso').value,
+                misure: document.getElementById('misure').value
+            };
 
-        // Crea un URL temporaneo per l'immagine
-        const image = canvas.toDataURL("image/png");
+            // Salvataggio su Firebase
+            const docRef = await addDoc(collection(db, "Spedizioni"), data);
+            
+            document.getElementById('formSpedizione').style.display = 'none';
+            document.getElementById('logisticLabel').style.display = 'block';
+            new QRCode(document.getElementById("qrcode"), docRef.id);
+        }
 
-        // Forza il download in modo più esplicito
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = 'Etichetta_RAR.png';
-        document.body.appendChild(link); // Necessario per alcuni browser
-        link.click();
-        document.body.removeChild(link); // Pulisce dopo il click
+        async function processaEtichetta() {
+            const element = document.getElementById('logisticLabel');
+            const canvas = await html2canvas(element);
+            const link = document.createElement('a');
+            link.download = 'etichetta.png';
+            link.href = canvas.toDataURL();
+            link.click();
 
-        // Invio Email subito dopo
-        await emailjs.send("service_ID", "template_ID", {
-            destinatario: document.getElementById('destName').value,
-            peso: document.getElementById('peso').value,
-            misure: document.getElementById('misure').value,
-            to_email: "rarlogistik@gmail.com"
-        });
+            await emailjs.send("service_ID", "template_ID", {
+                destinatario: document.getElementById('destName').value,
+                to_email: "rarlogistik@gmail.com"
+            });
+            alert("Operazione completata!");
+        }
 
-        alert("Operazione completata!");
-    } catch (err) {
-        console.error("Errore fatale:", err);
-        alert("Errore: " + err.message);
-    }
-};
-</script>
+        // Collegamento eventi (evita l'errore di funzione non trovata)
+        document.getElementById('btnGenera').addEventListener('click', creaSpedizione);
+        document.getElementById('btnDownload').addEventListener('click', processaEtichetta);
+    </script>
 </body>
 </html>
