@@ -93,12 +93,13 @@
             link.href = canvas.toDataURL();
             link.click();
 
-            await emailjs.send("service_9cbky1i", "template_wcmr64e", {
-                destinatario: document.getElementById('destName').value,
-                to_email: "rarlogistik@gmail.com"
-            });
-            alert("Operazione completata!");
-        }
+          await emailjs.send("service_ID", "template_ID", {
+    destinatario: document.getElementById('destName').value,
+    indirizzo: document.getElementById('destAddress').value + ", " + document.getElementById('destCap').value + " " + document.getElementById('destCity').value,
+    peso: document.getElementById('peso').value,
+    misure: document.getElementById('misure').value,
+    to_email: "rarlogistik@gmail.com"
+});
 
         document.getElementById('btnGenera').addEventListener('click', creaSpedizione);
         document.getElementById('btnDownload').addEventListener('click', processaEtichetta);
