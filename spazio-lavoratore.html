@@ -4,7 +4,7 @@
     <link rel=¨manifest¨ href=¨manifest.json¨>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Area Lavoratore</title>
+    <title>RAR Logistik - Worker area</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -52,11 +52,11 @@
     
     <!-- MENU HAMBURGER ULTRAPULITO -->
     <nav id="sideMenu" class="side-menu">
-        <button class="close-menu-btn" onclick="toggleMenu(false)">✕ CHIUDI</button>
+        <button class="close-menu-btn" onclick="toggleMenu(false)">✕ Close</button>
         <div class="menu-links">
             <!-- Rimasti solo i due bottoni richiesti -->
-            <button onclick="navigaA('navigatore.html')" class="menu-link-item">🗺️ Naviga Percorso</button>
-            <button onclick="eseguiLogout()" class="menu-link-item logout-trigger">🚪 Fine Turno / Uscita</button>
+            <button onclick="navigaA('navigatore.html')" class="menu-link-item">🗺️ Start Route</button>
+            <button onclick="eseguiLogout()" class="menu-link-item logout-trigger">🚪 End Route</button>
         </div>
     </nav>
 
@@ -70,8 +70,8 @@
 
         <div class="main-content">
             <div class="status-card">
-                <div class="driver-welcome" id="txtBenvenuto">Benvenuto Driver</div>
-                <span class="status-badge">In Servizio ●</span>
+                <div class="driver-welcome" id="txtBenvenuto">Welcome Driver</div>
+                <span class="status-badge">Online ●</span>
             </div>
         </div>
     </div>
