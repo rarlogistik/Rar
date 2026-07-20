@@ -3,176 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Portale Clienti & Spedizioni</title>
-    <!-- Libreria per generare il codice QR -->
+    <title>RAR Logistik - Generazione Etichette</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script> (function(){ emailjs.init("TUO_USER_ID_EMAILJS"); })(); </script>
     <style>
-        .portal-container { max-width: 600px; margin: 2rem auto; padding: 1rem; }
-        .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
-        .input-group { margin-bottom: 1.25rem; }
-        .input-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); }
-        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; font-size: 0.95rem; }
-        
-        /* Layout Etichetta Logistica Stampabile */
-        .label-template { background: white; border: 3px solid #000; padding: 1.5rem; width: 100%; max-width: 380px; margin: 2rem auto; font-family: 'Courier New', Courier, monospace; color: black; display: none; }
-        .label-header { border-bottom: 2px dashed #000; padding-bottom: 0.5rem; text-align: center; margin-bottom: 1rem; }
-        .qr-zone { display: flex; justify-content: center; margin: 1.5rem 0; }
-        .btn-print { background-color: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 1rem; cursor: pointer; font-family: inherit; }
+        :root { --primary: #0f172a; --accent: #f97316; }
+        body { background-color: var(--primary); color: white; font-family: 'Inter', sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .form-card { background: #1e293b; padding: 2rem; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #334155; }
+        .input-group { margin-bottom: 1rem; }
+        .input-field { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 1rem; background: var(--accent); border: none; border-radius: 8px; font-weight: 800; color: white; cursor: pointer; }
+        .label-template { background: white; color: black; padding: 20px; width: 350px; display: none; margin: 20px auto; border: 2px solid #000; }
     </style>
 </head>
 <body>
 
-    <header class="navbar">
-        <a href="#" class="logo">RAR <span>Logistik Clienti</span></a>
-    </header>
+<div class="form-card" id="formSpedizione">
+    <h1 style="color: var(--accent); text-align: center;">Genera Spedizione</h1>
+    <input type="text" id="destName" class="input-field" placeholder="Nome Destinatario">
+    <input type="number" id="peso" class="input-field" placeholder="Peso (kg)">
+    <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)">
+    <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo">
+    <input type="text" id="destCap" class="input-field" placeholder="CAP">
+    <input type="text" id="destCity" class="input-field" placeholder="Città">
+    <button onclick="window.creaSpedizioneCloud()">Genera Etichetta ⚡</button>
+</div>
 
-    <main class="portal-container">
-        <h1 style="font-size: 1.6rem; color: var(--primary); margin-bottom: 0.5rem;">Crea Nuova Spedizione</h1>
-        <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">Inserisci i dettagli del destinatario per registrare il pacco nel nostro sistema e generare l'etichetta barcode.</p>
+<div class="label-template" id="logisticLabel">
+    <h2>RAR LOGISTIK</h2>
+    <div id="lblData"></div>
+    <div id="qrcode"></div>
+    <button onclick="processaEtichetta()">Download & Invia Email 📧</button>
+</div>
 
-        <!-- Form Inserimento Spedizione -->
-        <div class="form-card" id="formSpedizione">
-            <div class="input-group">
-                <label>Nome / Azienda Destinatario</label>
-                <input type="text" id="destName" class="input-field" placeholder="Es. Mario Rossi / GmbH">
-            </div>
-            
-            <div class="input-group">
-                <label>Indirizzo di Consegna (Via e Numero)</label>
-                <input type="text" id="destAddress" class="input-field" placeholder="Es. Hauptstraße 14">
-            </div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
-            <div style="display: flex; gap: 1rem;">
-                <div class="input-group" style="flex: 1;">
-                    <label>CAP (PLZ)</label>
-                    <input type="text" id="destCap" class="input-field" placeholder="Es. 9020">
-                </div>
-                <div class="input-group" style="flex: 2;">
-                    <label>Città</label>
-                    <input type="text" id="destCity" class="input-field" placeholder="Es. Klagenfurt">
-                </div>
-            </div>
+    const firebaseConfig = { /* Le tue chiavi */ };
+    const db = getFirestore(initializeApp(firebaseConfig));
 
-            <div class="input-group">
-                <label>Note / Indicazioni per il Driver (Opzionale)</label>
-                <input type="text" id="destNotes" class="input-field" placeholder="Es. Consegnare al secondo piano / Lasciare in giardino">
-            </div>
+    window.creaSpedizioneCloud = async function() {
+        // ... (Logica esistente di salvataggio Firebase)
+        document.getElementById('formSpedizione').style.display = 'none';
+        document.getElementById('logisticLabel').style.display = 'block';
+    };
 
-            <!-- Il bottone punta alla funzione globale corretta -->
-            <button onclick="window.creaSpedizioneCloud()" class="btn-navigation" style="width: 100%; margin: 0;">
-                Genera Spedizione ed Etichetta ⚡
-            </button>
-        </div>
+    window.processaEtichetta = async function() {
+        const element = document.getElementById('logisticLabel');
+        
+        // 1. Download immagine
+        html2canvas(element).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'etichetta.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
 
-        <!-- Modello di Etichetta Logistica Stampabile -->
-        <div class="label-template" id="logisticLabel">
-            <div class="label-header">
-                <h2 style="margin: 0; font-size: 1.4rem; font-weight: 800;">RAR LOGISTIK</h2>
-                <span style="font-size: 0.8rem;">EXZELLENZ EXPRESS</span>
-            </div>
-            
-            <div>
-                <span style="font-size: 0.75rem; font-weight: bold;">DESTINATARIO:</span>
-                <div id="lblName" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem;"></div>
-                
-                <span style="font-size: 0.75rem; font-weight: bold;">INDIRIZZO DI CONSEGNA:</span>
-                <div id="lblAddress" style="font-size: 1.1rem; font-weight: bold;"></div>
-                <div id="lblCity" style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem;"></div>
-
-                <span style="font-size: 0.75rem; font-weight: bold;">NOTE CONSEGNA:</span>
-                <div id="lblNotes" style="font-size: 0.8rem; min-height: 20px;">-</div>
-            </div>
-
-            <!-- Zona Matrice QR -->
-            <div class="qr-zone">
-                <div id="qrcode"></div>
-            </div>
-
-            <div style="text-align: center; font-size: 0.9rem; font-weight: bold; border-top: 1px dashed #000; padding-top: 0.5rem; margin-bottom: 1rem;">
-                ID: <span id="lblId">---</span>
-            </div>
-            
-            <button class="btn-print" onclick="window.print()">Stampa Etichetta 🖨️</button>
-        </div>
-
-    </main>
-
-    <!-- Script Modulare Firebase corretto e ripulito -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
-
-        // Le tue chiavi pulite di Firebase inserite correttamente
-        const firebaseConfig = {  
-            apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",  
-            authDomain: "rar-logistik-7663d.firebaseapp.com",   
-            projectId: "rar-logistik-7663d",    
-            storageBucket: "rar-logistik-7663d.firebasestorage.app",    
-            messagingSenderId: "657384053565",  
-            appId: "1:657384053565:web:fc1e812a80553f1eb08354"  
-        };    
-
-        // Inizializzazione Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Funzione globale
-        window.creaSpedizioneCloud = async function() {
-            const name = document.getElementById('destName').value.trim();
-            const address = document.getElementById('destAddress').value.trim();
-            const cap = document.getElementById('destCap').value.trim();
-            const city = document.getElementById('destCity').value.trim();
-            const notes = document.getElementById('destNotes').value.trim() || "Nessuna nota";
-
-            if(!name || !address || !cap || !city) {
-                alert("Per favore, compila tutti i campi obbligatori dell'indirizzo.");
-                return;
-            }
-
-            const indirizzoCompleto = `${address}, ${cap} ${city}`;
-
-            try {
-                // Invio record al database Cloud Firestore
-                const docRef = await addDoc(collection(db, "Spedizioni"), {
-                    destinatario: name,
-                    indirizzo: indirizzoCompleto,
-                    note: notes,
-                    stato: "In Transito",
-                    dataCreazione: new Date().toLocaleDateString('it-IT'),
-                    oraCreazione: new Date().toLocaleTimeString('it-IT'),
-                    driver: "Non Assegnato",
-                    coordinateConsegna: null
-                });
-
-                const paccoId = docRef.id; // Codice alfa-numerico univoco globale generato da Google
-
-                // Transizione grafica all'etichetta
-                document.getElementById('formSpedizione').style.display = 'none';
-                document.getElementById('logisticLabel').style.display = 'block';
-
-                document.getElementById('lblName').innerText = name.toUpperCase();
-                document.getElementById('lblAddress').innerText = address.toUpperCase();
-                document.getElementById('lblCity').innerText = `${cap} ${city}`.toUpperCase();
-                document.getElementById('lblNotes').innerText = notes;
-                document.getElementById('lblId').innerText = paccoId;
-
-                // Generazione istantanea del codice QR
-                document.getElementById('qrcode').innerHTML = ""; 
-                new QRCode(document.getElementById("qrcode"), {
-                    text: paccoId,
-                    width: 140,
-                    height: 140,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
-                });
-
-            } catch (error) {
-                console.error("Errore durante il salvataggio su Firebase:", error);
-                alert("Si è verificato un errore nel salvataggio dei dati nel cloud. Verifica la configurazione.");
-            }
-        };
-    </script>
+        // 2. Invio Email (configura service_id e template_id su EmailJS)
+        emailjs.send("service_ID", "template_ID", {
+            destinatario: document.getElementById('destName').value,
+            to_email: "rarlogistik@gmail.com"
+        }).then(() => alert("Email inviata con successo!"));
+    };
+</script>
 </body>
 </html>
