@@ -50,33 +50,42 @@
         document.getElementById('formSpedizione').style.display = 'none';
         document.getElementById('logisticLabel').style.display = 'block';
     };
-
-   window.processaEtichetta = async function() {
+window.processaEtichetta = async function() {
     const element = document.getElementById('logisticLabel');
     
-    // 1. GENERAZIONE IMMAGINE
-    const canvas = await html2canvas(element);
-    const dataURL = canvas.toDataURL("image/png");
+    // Rimuoviamo il "display: none" forzato per assicurarci che sia visibile per la cattura
+    element.style.display = 'block'; 
+    
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2, // Aumenta la qualità
+            useCORS: true
+        });
 
-    // 2. DOWNLOAD FORZATO (Questo funzionerà perché è un'azione diretta)
-    const link = document.createElement('a');
-    link.download = 'etichetta_RAR.png';
-    link.href = dataURL;
-    link.click();
+        // Crea un URL temporaneo per l'immagine
+        const image = canvas.toDataURL("image/png");
 
-    // 3. INVIO EMAIL
-    // Usiamo un piccolo timeout per far sì che il browser non blocchi l'email
-    setTimeout(() => {
-        emailjs.send("service_ID", "template_ID", {
+        // Forza il download in modo più esplicito
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = 'Etichetta_RAR.png';
+        document.body.appendChild(link); // Necessario per alcuni browser
+        link.click();
+        document.body.removeChild(link); // Pulisce dopo il click
+
+        // Invio Email subito dopo
+        await emailjs.send("service_ID", "template_ID", {
             destinatario: document.getElementById('destName').value,
             peso: document.getElementById('peso').value,
             misure: document.getElementById('misure').value,
             to_email: "rarlogistik@gmail.com"
-        }).then(
-            () => alert("Download avviato ed email inviata correttamente!"),
-            (err) => alert("Download avviato, ma errore nell'invio email: " + JSON.stringify(err))
-        );
-    }, 500);
+        });
+
+        alert("Operazione completata!");
+    } catch (err) {
+        console.error("Errore fatale:", err);
+        alert("Errore: " + err.message);
+    }
 };
 </script>
 </body>
