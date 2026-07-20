@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Portale Clienti & Spedizioni</title>
+    <title>RAR Logistik</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -20,15 +20,15 @@
 <body>
 
     <main class="portal-container">
-        <h1>Crea Spedizione</h1>
+        <h1>New QR CODE</h1>
         <div class="form-card" id="formSpedizione">
-            <input type="text" id="destName" class="input-field" placeholder="Destinatario">
-            <input type="number" id="peso" class="input-field" placeholder="Peso (kg)">
-            <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)">
-            <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo">
+            <input type="text" id="destName" class="input-field" placeholder="Client name">
+            <input type="number" id="peso" class="input-field" placeholder="Weight (kg)">
+            <input type="text" id="misure" class="input-field" placeholder="Measures (ex: 30x20x10)">
+            <input type="text" id="destAddress" class="input-field" placeholder="Address">
             <input type="text" id="destCap" class="input-field" placeholder="CAP">
-            <input type="text" id="destCity" class="input-field" placeholder="Città">
-            <button id="btnGenera" class="btn-action">Genera Spedizione ed Etichetta ⚡</button>
+            <input type="text" id="destCity" class="input-field" placeholder="City">
+            <button id="btnGenera" class="btn-action">Generate Qr Code ⚡</button>
         </div>
 
         <div class="label-template" id="logisticLabel">
@@ -38,7 +38,7 @@
             <p><strong>Peso:</strong> <span id="lblPeso"></span> kg</p>
             <p><strong>Misure:</strong> <span id="lblMisure"></span> cm</p>
             <div id="qrcode" style="display:flex; justify-content:center; margin: 15px 0;"></div>
-            <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & Invia Email 📧</button>
+            <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & send-email to company 📧</button>
         </div>
     </main>
 
