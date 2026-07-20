@@ -51,23 +51,33 @@
         document.getElementById('logisticLabel').style.display = 'block';
     };
 
-    window.processaEtichetta = async function() {
-        const element = document.getElementById('logisticLabel');
-        
-        // 1. Download immagine
-        html2canvas(element).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'etichetta.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        });
+   window.processaEtichetta = async function() {
+    const element = document.getElementById('logisticLabel');
+    
+    // 1. GENERAZIONE IMMAGINE
+    const canvas = await html2canvas(element);
+    const dataURL = canvas.toDataURL("image/png");
 
-        // 2. Invio Email (configura service_id e template_id su EmailJS)
+    // 2. DOWNLOAD FORZATO (Questo funzionerà perché è un'azione diretta)
+    const link = document.createElement('a');
+    link.download = 'etichetta_RAR.png';
+    link.href = dataURL;
+    link.click();
+
+    // 3. INVIO EMAIL
+    // Usiamo un piccolo timeout per far sì che il browser non blocchi l'email
+    setTimeout(() => {
         emailjs.send("service_ID", "template_ID", {
             destinatario: document.getElementById('destName').value,
+            peso: document.getElementById('peso').value,
+            misure: document.getElementById('misure').value,
             to_email: "rarlogistik@gmail.com"
-        }).then(() => alert("Email inviata con successo!"));
-    };
+        }).then(
+            () => alert("Download avviato ed email inviata correttamente!"),
+            (err) => alert("Download avviato, ma errore nell'invio email: " + JSON.stringify(err))
+        );
+    }, 500);
+};
 </script>
 </body>
 </html>
