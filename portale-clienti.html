@@ -9,42 +9,37 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #0f172a; --accent: #f97316; }
-        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
-        .portal-container { max-width: 600px; margin: 2rem auto; padding: 1rem; }
-        .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; }
-        .input-group { margin-bottom: 1rem; }
-        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
-        .btn-action { background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
-        .label-template { background: white; border: 3px solid #000; padding: 1.5rem; width: 100%; max-width: 380px; margin: 2rem auto; display: none; text-align: center; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; padding: 20px; }
+        .portal-container { max-width: 500px; margin: 0 auto; }
+        .form-card { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .input-field { width: 100%; padding: 0.75rem; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        .btn-action { background: var(--accent); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; width: 100%; cursor: pointer; }
+        .label-template { background: white; border: 3px solid #000; padding: 20px; width: 350px; margin: 20px auto; display: none; text-align: left; }
     </style>
 </head>
 <body>
 
     <main class="portal-container">
-        <h1>Crea Nuova Spedizione</h1>
+        <h1>Crea Spedizione</h1>
         <div class="form-card" id="formSpedizione">
-            <input type="text" id="destName" class="input-field" placeholder="Destinatario" style="margin-bottom:10px;">
-            <input type="number" id="peso" class="input-field" placeholder="Peso (kg)" style="margin-bottom:10px;">
-            <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)" style="margin-bottom:10px;">
-            <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo" style="margin-bottom:10px;">
-            <input type="text" id="destCap" class="input-field" placeholder="CAP" style="margin-bottom:10px;">
-            <input type="text" id="destCity" class="input-field" placeholder="Città" style="margin-bottom:10px;">
+            <input type="text" id="destName" class="input-field" placeholder="Destinatario">
+            <input type="number" id="peso" class="input-field" placeholder="Peso (kg)">
+            <input type="text" id="misure" class="input-field" placeholder="Misure (es: 30x20x10)">
+            <input type="text" id="destAddress" class="input-field" placeholder="Indirizzo">
+            <input type="text" id="destCap" class="input-field" placeholder="CAP">
+            <input type="text" id="destCity" class="input-field" placeholder="Città">
             <button id="btnGenera" class="btn-action">Genera Spedizione ed Etichetta ⚡</button>
         </div>
 
-       <div class="label-template" id="logisticLabel">
-    <div style="border-bottom: 2px solid #000; margin-bottom: 10px;">
-        <h2 style="margin: 0;">RAR LOGISTIK</h2>
-    </div>
-    <div style="text-align: left; font-size: 0.9rem;">
-        <p><strong>Destinatario:</strong> <span id="lblDest"></span></p>
-        <p><strong>Peso:</strong> <span id="lblPeso"></span> kg</p>
-        <p><strong>Misure:</strong> <span id="lblMisure"></span> cm</p>
-         <p><strong>Indirizzo:</strong> <span id="lblIndirizzo"></span></p>
-    </div>
-    <div id="qrcode" style="display:flex; justify-content:center; margin: 15px 0;"></div>
-    <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & Invia Email 📧</button>
-</div>
+        <div class="label-template" id="logisticLabel">
+            <h2 style="text-align:center; margin-top:0;">RAR LOGISTIK</h2>
+            <p><strong>Destinatario:</strong> <span id="lblDest"></span></p>
+            <p><strong>Indirizzo:</strong> <span id="lblIndirizzo"></span></p>
+            <p><strong>Peso:</strong> <span id="lblPeso"></span> kg</p>
+            <p><strong>Misure:</strong> <span id="lblMisure"></span> cm</p>
+            <div id="qrcode" style="display:flex; justify-content:center; margin: 15px 0;"></div>
+            <button id="btnDownload" class="btn-action" style="background: #3b82f6;">Download & Invia Email 📧</button>
+        </div>
     </main>
 
     <script type="module">
@@ -61,56 +56,34 @@
         });
 
         const db = getFirestore(app);
-        emailjs.init("TUO_USER_ID");
+        emailjs.init("service_9cbky1i"); // <--- INSERISCI QUI IL TUO ID
 
-    async function creaSpedizione() {
-    // 1. Prendi tutti i valori inclusi CAP e Città
-    const dest = document.getElementById('destName').value;
-    const peso = document.getElementById('peso').value;
-    const misure = document.getElementById('misure').value;
-    const indirizzo = document.getElementById('destAddress').value;
-    const cap = document.getElementById('destCap').value;
-    const citta = document.getElementById('destCity').value;
+        async function creaSpedizione() {
+            const dest = document.getElementById('destName').value;
+            const address = document.getElementById('destAddress').value;
+            const cap = document.getElementById('destCap').value;
+            const city = document.getElementById('destCity').value;
+            const peso = document.getElementById('peso').value;
+            const misure = document.getElementById('misure').value;
 
-    // 2. Salva su Firebase (indirizzo completo)
-    const docRef = await addDoc(collection(db, "Spedizioni"), {
-        destinatario: dest,
-        indirizzo: `${indirizzo}, ${cap} ${citta}`,
-        peso: peso,
-        misure: misure
-    });
-    
-    // 3. RIEMPI L'ETICHETTA
-    document.getElementById('lblDest').innerText = dest;
-    document.getElementById('lblPeso').innerText = peso;
-    document.getElementById('lblMisure').innerText = misure;
-    // Uniamo tutto per l'indirizzo sull'etichetta
-    document.getElementById('lblIndirizzo').innerText = `${indirizzo}, ${cap} ${citta}`;
+            const docRef = await addDoc(collection(db, "Spedizioni"), {
+                destinatario: dest,
+                indirizzo: `${address}, ${cap} ${city}`,
+                peso: peso,
+                misure: misure
+            });
+            
+            document.getElementById('lblDest').innerText = dest;
+            document.getElementById('lblIndirizzo').innerText = `${address}, ${cap} ${city}`;
+            document.getElementById('lblPeso').innerText = peso;
+            document.getElementById('lblMisure').innerText = misure;
 
-    // 4. Mostra l'etichetta
-    document.getElementById('formSpedizione').style.display = 'none';
-    document.getElementById('logisticLabel').style.display = 'block';
-    new QRCode(document.getElementById("qrcode"), docRef.id);
-}
-
-    // 2. Salva su Firebase
-    const docRef = await addDoc(collection(db, "Spedizioni"), {
-        destinatario: dest,
-        peso: peso,
-        misure: misure
-    });
-    
-    // 3. RIEMPI L'ETICHETTA (Questa è la parte nuova!)
-    document.getElementById('lblDest').innerText = dest;
-    document.getElementById('lblPeso').innerText = peso;
-    document.getElementById('lblMisure').innerText = misure;
-           document.getElementById('lblAddress').innerText = address;
-
-    // 4. Mostra e genera QR
-    document.getElementById('formSpedizione').style.display = 'none';
-    document.getElementById('logisticLabel').style.display = 'block';
-    new QRCode(document.getElementById("qrcode"), docRef.id);
-}
+            document.getElementById('formSpedizione').style.display = 'none';
+            document.getElementById('logisticLabel').style.display = 'block';
+            
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), docRef.id);
+        }
 
         async function processaEtichetta() {
             const element = document.getElementById('logisticLabel');
