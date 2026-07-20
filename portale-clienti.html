@@ -46,10 +46,14 @@
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
         // Configurazione Firebase
-        const firebaseConfig = { /* Le tue chiavi qui */ };
-        const db = getFirestore(initializeApp(firebaseConfig));
-        emailjs.init("TUO_USER_ID");
-
+        const firebaseConfig = {  
+    apiKey: "AIzaSyDlGVX0woh3gyUWEh8l0x_mr0GnhjeusA0",  
+    authDomain: "rar-logistik-7663d.firebaseapp.com",   
+    projectId: "rar-logistik-7663d", // <-- Assicurati che questo sia scritto bene!
+    storageBucket: "rar-logistik-7663d.firebasestorage.app",    
+    messagingSenderId: "657384053565",  
+    appId: "1:657384053565:web:fc1e812a80553f1eb08354"  
+};
         async function creaSpedizione() {
             const data = {
                 destinatario: document.getElementById('destName').value,
