@@ -4,7 +4,7 @@
     <link rel=¨manifest¨ href=¨manifest.json¨>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAR Logistik - Scanner & Gestione Pacchi</title>
+    <title>RAR Logistik</title>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,7 +58,7 @@
     <div class="split-scanner-container">
         <header class="navbar" style="background:#1e293b; border-bottom: 1px solid #334155; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
             <a href="spazio-lavoratore.html" class="logo" style="text-decoration:none; font-weight:800; font-size:1.1rem; color:white;">RAR <span style="color:#f97316;">Logistik</span></a>
-            <button onclick="fineScannerizzazione()" style="background:#22c55e; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.85rem; padding:0.5rem 1rem; cursor:pointer;">🏁 CREA GIRO</button>
+            <button onclick="fineScannerizzazione()" style="background:#22c55e; color:white; border:none; border-radius:8px; font-weight:bold; font-size:0.85rem; padding:0.5rem 1rem; cursor:pointer;">🏁 CREATE ROUTE</button>
         </header>
 
         <!-- Aggiunto un click listener globale per chiudere la tendina toccando altrove -->
@@ -69,19 +69,19 @@
                     <div class="laser-box"><div class="laser-line"></div></div>
                 </div>
             </div>
-            <div id="status" style="text-align:center; font-size:0.8rem; font-weight:700; color:#94a3b8; margin-bottom:1rem; text-transform:uppercase;">Scanner Pronto</div>
+            <div id="status" style="text-align:center; font-size:0.8rem; font-weight:700; color:#94a3b8; margin-bottom:1rem; text-transform:uppercase;">Scanner Ready</div>
 
             <div class="manual-entry-card" onclick="event.stopPropagation()">
-                <div style="font-size:0.85rem; font-weight:800; color:#f97316; text-transform:uppercase; margin-bottom:0.75rem;">➕ Inserimento Manuale Vie</div>
-                <input type="text" id="manDestinatario" class="manual-input" placeholder="Nome Destinatario">
-                <input type="text" id="manIndirizzo" class="manual-input" placeholder="Inizia a digitare la via...">
+                <div style="font-size:0.85rem; font-weight:800; color:#f97316; text-transform:uppercase; margin-bottom:0.75rem;">➕Add Address Manually</div>
+                <input type="text" id="manDestinatario" class="manual-input" placeholder="Client Name">
+                <input type="text" id="manIndirizzo" class="manual-input" placeholder="start typing...">
                 <button onclick="aggiungiViaAmano()" style="width:100%; padding:0.6rem; background:#f97316; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-family:inherit; font-size:0.85rem;">Aggiungi questo Stop</button>
             </div>
 
             <div style="margin-bottom: 1rem;" onclick="event.stopPropagation()">
                 <div style="display:flex; justify-content:space-between; font-size:0.9rem; font-weight:700; margin-bottom:0.75rem;">
-                    <span>📦 Pacchi in Carico</span>
-                    <span id="itemsCounter" style="color:#22c55e;">0 Tappe</span>
+                    <span>📦 Added Addresses</span>
+                    <span id="itemsCounter" style="color:#22c55e;">0 Stops</span>
                 </div>
                 <div id="stopList"></div>
             </div>
@@ -180,18 +180,18 @@
                             creaNuovaTappa(decodedText.trim(), data.destinatario, data.indirizzo, results[0].geometry.location, data.note || "");
                         }
                     });
-                } else { alert("Pacco non trovato."); }
+                } else { alert("Package not found."); }
             } catch (e) { console.error(e); }
-            setTimeout(() => { isProcessing = false; document.getElementById('status').innerText = "Inquadra il QR Code"; }, 1500);
+            setTimeout(() => { isProcessing = false; document.getElementById('status').innerText = "Scan QR Code"; }, 1500);
         }
 
         window.aggiungiViaAmano = function() {
             const dest = document.getElementById('manDestinatario').value.trim();
             const addr = document.getElementById('manIndirizzo').value.trim();
 
-            if(!dest || !addr) { alert("Compila tutti i campi!"); return; }
+            if(!dest || !addr) { alert("Fill every information!"); return; }
 
-            document.getElementById('status').innerText = "Verifica... 🗺️";
+            document.getElementById('status').innerText = "Verifying... 🗺️";
             geocoder.geocode({ address: addr }, (results, geoStatus) => {
                 if (geoStatus === "OK" && results[0]) {
                     const fakeId = "MAN_" + Date.now();
@@ -199,11 +199,11 @@
                     
                     document.getElementById('manDestinatario').value = "";
                     document.getElementById('manIndirizzo').value = "";
-                    document.getElementById('status').innerText = "Tappa Aggiunta! ✅";
+                    document.getElementById('status').innerText = "Stop added✅";
                     
                     // Chiude forzatamente i rimasugli grafici della tendina dopo l'aggiunta
                     chiudiTendinaManualmente();
-                } else { alert("Indirizzo non trovato."); document.getElementById('status').innerText = "Scanner Pronto"; }
+                } else { alert("Address not found."); document.getElementById('status').innerText = "Scanner ready"; }
             });
         };
 
@@ -281,8 +281,8 @@
         };
 
         window.fineScannerizzazione = async function() {
-            if (stops.length === 0) { alert("Lista vuota!"); return; }
-            let idRotta = prompt("Inserisci il codice numerico della rotta (es. 101):");
+            if (stops.length === 0) { alert("Empty list!"); return; }
+            let idRotta = prompt("Route number:");
             if (!idRotta) return;
 
             let rottaOttimizzata = ottimizzaPercorsoLogistico(posizioneMagazzinoUgualeGPS, stops);
